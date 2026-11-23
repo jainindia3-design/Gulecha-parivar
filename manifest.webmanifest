@@ -1,0 +1,17 @@
+{
+  "name": "Gulecha Parivar",
+  "short_name": "Gulecha",
+  "description": "गुलेच्छा परिवार का अपना ऐप – बायोडाटा, वंश वृक्ष, तिथि, त्योहार",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbf6f1",
+  "theme_color": "#7a1533",
+  "lang": "hi",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
