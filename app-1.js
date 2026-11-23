@@ -439,11 +439,14 @@ $("#tree").addEventListener("click",e=>{const b=e.target.closest(".tp");if(b)ope
 /* ======================= Parivar (kuldevi etc.) ======================= */
 const FAM_FIELDS=[["surname","Parivar ka naam / Upnaam"],["kuldevi","Kuldevi"],["kuldevta","Kuldevta"],["gotra","Gotra"],["mool_gaon","Mool gaon / Purvajon ka sthan"],["purohit","Kul purohit / Pandit ji (naam, sampark)"],["mandir","Kuldevi mandir ka sthan"],["riti","Riti-rivaaz aur paramparayein",1],["history","Parivar ka itihaas",1]];
 function renderParivar(){
-  const f={kuldevi:"Sachiyay Mata (सच्चियाय माता)",...(family||{})}; if(!f.kuldevi) f.kuldevi="Sachiyay Mata (सच्चियाय माता)";
+  const f={kuldevi:"Sachiyay Mata (सच्चियाय माता)",kuldevta:"Shri Kala Bheruji (श्री काला भैरूजी)",...(family||{})}; if(!f.kuldevi) f.kuldevi="Sachiyay Mata (सच्चियाय माता)"; if(!f.kuldevta) f.kuldevta="Shri Kala Bheruji (श्री काला भैरूजी)";
   const rows=FAM_FIELDS.filter(([k])=>f[k]).map(([k,l])=>`<dt>${esc(l)}</dt><dd>${esc(f[k])}</dd>`).join("");
   const gone=members.filter(isGone);
   $("#parivar").innerHTML=`
-    <div class="kdhero" id="kdHero"><img src="kuldevi.jpg" alt="Kuldevi Sachiyay Mata"><div class="kdcap">॥ जय सच्चियाय माता ॥<small>${L("Kuldevi – Sachiyay Mata","कुलदेवी – सच्चियाय माता")}</small></div></div>
+    <div class="kdgrid">
+    <div class="kdhero" data-img="kuldevi.jpg"><img src="kuldevi.jpg" alt="Kuldevi Sachiyay Mata"><div class="kdcap">॥ जय सच्चियाय माता ॥<small>${L("Kuldevi – Sachiyay Mata","कुलदेवी – सच्चियाय माता")}</small></div></div>
+    <div class="kdhero" data-img="kuldevta.jpg"><img src="kuldevta.jpg" alt="Kuldevta Shri Kala Bheruji"><div class="kdcap">॥ जय काला भैरूजी ॥<small>${L("Kuldevta – Shri Kala Bheruji","कुलदेवता – श्री काला भैरूजी")}</small></div></div>
+    </div>
     <div class="sec"><h4>🛕 Kul aur Parampara</h4>${rows?`<dl class="kv">${rows}</dl>`:`<p class="sub" style="margin:0">Abhi kuch nahi bhara gaya.${isAdmin?" Neeche Edit dabao.":" Owner yahan jaankari bharenge."}</p>`}
       ${isAdmin&&db?`<div class="footer-actions"><button class="btn" id="famEdit">✏️ Edit karo</button></div>`:""}</div>
     <div class="sec"><h4>🙏 Hamare Purvaj</h4>${gone.length?gone.map(m=>{
@@ -453,7 +456,7 @@ function renderParivar(){
         ${r?`<div class="mrel">🪔 Punyatithi: ${esc(r.month+" "+r.paksha+" "+r.tithi)}${st?` · Shraddh: ${esc(st.label)}`:""}</div>`:""}</div></button>`}).join("")
       :`<p class="sub" style="margin:0">Kisi member ke biodata mein “Sthiti: Swargiya” chunoge to woh yahan dikhenge.</p>`}</div>`;
   const b=$("#famEdit"); if(b) b.onclick=openFamForm;
-  $("#kdHero").onclick=()=>{const lb=$("#lightbox");lb.innerHTML=`<img alt="Sachiyay Mata" src="kuldevi.jpg"><div class="lb-actions"><button class="btn" id="lbClose">🙏 Band karo</button></div>`;lb.classList.add("open");$("#lbClose").onclick=()=>lb.classList.remove("open");};
+  $("#parivar").querySelectorAll(".kdhero").forEach(k=>k.onclick=()=>{const lb=$("#lightbox");lb.innerHTML=`<img alt="" src="${k.dataset.img}"><div class="lb-actions"><button class="btn" id="lbClose">🙏 Band karo</button></div>`;lb.classList.add("open");$("#lbClose").onclick=()=>lb.classList.remove("open");});
   $("#parivar").querySelectorAll(".mcard").forEach(x=>x.onclick=()=>openView(x.dataset.id));
 }
 function openFamForm(){

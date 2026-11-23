@@ -257,6 +257,11 @@ nav.tabs .tab.on .ti{filter:none;opacity:1}
 .sp-j{color:rgba(255,255,255,.8);font-size:16px;margin-top:18px;animation:spUp .9s .45s both}
 @keyframes spIn{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes spUp{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.kd-pair{display:flex;flex:0 0 auto}.kd-pair img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #f4c46b}.kd-pair img+img{margin-left:-14px}
+.kd b+b{margin-top:1px}
+.kdgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.kdgrid .kdhero{margin:0}.kdgrid .kdhero img{height:300px;max-height:none}
+.kdgrid .kdcap{font-size:15px;padding:30px 8px 10px}.kdgrid .kdcap small{font-size:12px}
+@media(min-width:700px){.kdgrid .kdhero img{height:460px}}
 /* exported biodata card */
 #exportHost{position:fixed;left:-10000px;top:0}
 .bc{width:760px;background:#fff;color:#2b2220;font-family:"Mukta",sans-serif;padding:34px 40px 26px;border:10px solid #fbe6ec;outline:2px solid #c2416b;outline-offset:-18px}
@@ -289,7 +294,7 @@ return n=>C[n]||(C[n]=new Promise((res,rej)=>{const s=document.createElement("sc
 </script>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><div class="sp-logo"><img src="kuldevi-logo.jpg" alt=""></div><div class="sp-t">Gulecha <span>Parivar</span></div><div class="sp-h">गुलेच्छा परिवार</div><div class="sp-j">॥ जय सच्चियाय माता ॥</div></div>
+<div id="splash" aria-hidden="true"><div class="sp-logo"><img src="kuldevi-logo.jpg" alt=""></div><div class="sp-t">Gulecha <span>Parivar</span></div><div class="sp-h">गुलेच्छा परिवार</div><div class="sp-j">॥ जय सच्चियाय माता ॥ &nbsp; ॥ जय काला भैरूजी ॥</div></div>
 <script>(function(){var s=document.getElementById("splash");setTimeout(function(){s.classList.add("hide");setTimeout(function(){s.remove()},700)},1100);})();</script>
 <div class="wrap app">
   <header class="appbar">

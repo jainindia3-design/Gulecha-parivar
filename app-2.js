@@ -212,7 +212,7 @@ function onThisDay(){
 function renderHomeExtras(){
   const cta = db&&uid&&loaded&&!byId(uid) ? `<button class="cta" id="ctaBio"><span>✍️</span><div><b>${L("Apna biodata bharo","अपना बायोडाटा भरें")}</b><small>${L("2 minute lagenge – phir saare rishte apne aap dikhenge","2 मिनट लगेंगे – फिर सारे रिश्ते अपने आप दिखेंगे")}</small></div>›</button>` : "";
   const pin=notices.filter(x=>x.pinned||(Date.now()-(x.at||0))<7*864e5).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.at||0)-(a.at||0)).slice(0,2);
-  const kd=`<button class="kd" id="kdCard"><img src="kuldevi-thumb.jpg" alt="Sachiyay Mata"><div><b>॥ जय सच्चियाय माता ॥</b><small>${L("Gulecha parivar ki Kuldevi","गुलेच्छा परिवार की कुलदेवी")}</small></div><span>🙏</span></button>`;
+  const kd=`<button class="kd" id="kdCard"><span class="kd-pair"><img src="kuldevi-thumb.jpg" alt="Sachiyay Mata"><img src="kuldevta-thumb.jpg" alt="Kala Bheruji"></span><div><b>॥ जय सच्चियाय माता ॥</b><b>॥ जय काला भैरूजी ॥</b><small>${L("Kuldevi aur Kuldevta","कुलदेवी और कुलदेवता")}</small></div><span>🙏</span></button>`;
   $("#homeExtras").innerHTML=kd+cta+todayPanchang()+pin.map(x=>`<button class="noticebar" data-more="notices">📌 ${esc(x.text.length>140?x.text.slice(0,140)+"…":x.text)}<small>${esc((byId(x.by)||{}).name||"")}</small></button>`).join("")+onThisDay();
 }
 $("#homeExtras").addEventListener("click",e=>{ if(e.target.closest("#kdCard")){ showTab("parivar"); return; } if(e.target.closest("#ctaBio")){ openForm(uid,"self"); return; }const o=e.target.closest(".otd");if(o){showTab("events");openEvent(o.dataset.eid);return}
