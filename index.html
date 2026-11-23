@@ -277,13 +277,20 @@ nav.tabs .tab.on .ti{filter:none;opacity:1}
 <script src="config.js"></script>
 <script>window.LOGO_SVG_RAW='<img src="kuldevi-thumb.jpg" alt="Sachiyay Mata">';</script>
 <script src="firebase-shim.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
+<script>
+window.loadLib=(function(){const C={};const U={xlsx:"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",h2c:"https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",pdf:"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"};
+return n=>C[n]||(C[n]=new Promise((res,rej)=>{const s=document.createElement("script");s.src=U[n];s.onload=res;s.onerror=()=>{delete C[n];rej()};document.head.appendChild(s);}));})();
+</script>
 </head>
 <body>
 <div id="splash" aria-hidden="true"><div class="sp-logo"><img src="kuldevi-logo.jpg" alt=""></div><div class="sp-t">Gulecha <span>Parivar</span></div><div class="sp-h">गुलेच्छा परिवार</div><div class="sp-j">॥ जय सच्चियाय माता ॥</div></div>
-<script>(function(){var s=document.getElementById("splash");setTimeout(function(){s.classList.add("hide");setTimeout(function(){s.remove()},700)},1800);})();</script>
+<script>(function(){var s=document.getElementById("splash");setTimeout(function(){s.classList.add("hide");setTimeout(function(){s.remove()},700)},1100);})();</script>
 <div class="wrap app">
   <header class="appbar">
     <div class="logo" aria-hidden="true"><img src="kuldevi-thumb.jpg" alt="Sachiyay Mata" class="logo-img"></div>
@@ -613,6 +620,10 @@ function gcalLink(e){
   const details=`${e.sub||""}${e.mobile?"\nMobile: "+e.mobile:""}\n– Hamara Parivar app`;
   let u="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(title)+"&dates="+f(st)+"/"+f(en)+"&details="+encodeURIComponent(details);
   if(e.yearly) u+="&recur="+encodeURIComponent("RRULE:FREQ=YEARLY");
+  return u;
+}
+function waText(e,when){
+  const w = when===0?"Aaj":when===1?"Kal":fmtDate(e.iso)+" ko";
   switch(e.type){
     case "Birthday": return `🎂 ${w} ${e.name}${e.rel?` (${e.rel})`:""} ka janamdin hai (tarikh se)${e.sub?` – ${e.sub}`:""}! Dher saari badhaiyan aur aashirwad 🎉🙏`;
     case "Tithi Birthday": return `🪔 ${w} tithi ke anusaar ${e.name} ka janamdin hai (${e.sub}). Bahut bahut badhai! 🎉`;
@@ -711,7 +722,7 @@ $("#nextYear").onclick=()=>{calYear++;renderCalendar()};
 async function downloadExcel(){
   const ev=yearEvents(calYear).filter(calFilt);
   if(!ev.length){toast("Is saal koi date nahi hai");return}
-  if(typeof XLSX==="undefined"){toast("Excel tool load nahi hua, page dobara kholo");return}
+  if(typeof XLSX==="undefined"){ toast("Excel ban rahi hai…"); try{ await loadLib("xlsx"); }catch(e){ toast("Excel tool load nahi hua – internet check karo"); return; } }
   if(!downloads){toast("Is device pe download available nahi hai");return}
   const rows=[["Mahina","Tareekh","Din","Naam","Rishta","Event","Vivaran","Mobile"]];
   ev.forEach(e=>rows.push([MONTHS[e.m-1],fmtDate(e.iso),new Date(e.iso+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long"}),e.name,(e.type==="Family event"||e.cat!=="parivar")?"":e.rel,tl(e),e.sub||"",e.mobile||""]));
@@ -971,7 +982,7 @@ function cardHTML(m){
 let exporting=false;
 async function exportBiodata(m,kind){
   if(exporting) return;
-  if(typeof html2canvas==="undefined"||(kind==="pdf"&&!window.jspdf)){toast("Tool load nahi hua, page dobara kholo");return}
+  try{ await loadLib("h2c"); if(kind==="pdf") await loadLib("pdf"); }catch(e){ toast("Tool load nahi hua – internet check karo"); return; }
   exporting=true; toast("Ban raha hai…");
   const host=$("#exportHost"); host.innerHTML=cardHTML(m);
   try{
@@ -1208,11 +1219,4 @@ function renderHomeExtras(){
   const kd=`<button class="kd" id="kdCard"><img src="kuldevi-thumb.jpg" alt="Sachiyay Mata"><div><b>॥ जय सच्चियाय माता ॥</b><small>${L("Gulecha parivar ki Kuldevi","गुलेच्छा परिवार की कुलदेवी")}</small></div><span>🙏</span></button>`;
   $("#homeExtras").innerHTML=kd+cta+todayPanchang()+pin.map(x=>`<button class="noticebar" data-more="notices">📌 ${esc(x.text.length>140?x.text.slice(0,140)+"…":x.text)}<small>${esc((byId(x.by)||{}).name||"")}</small></button>`).join("")+onThisDay();
 }
-$("#homeExtras").addEventListener("click",e=>{ if(e.target.closest("#kdCard")){ showTab("parivar"); return; } if(e.target.closest("#ctaBio")){ openForm(uid,"self"); return; }const o=e.target.closest(".otd");if(o){showTab("events");openEvent(o.dataset.eid);return}
-  const nb=e.target.closest(".noticebar");if(nb){showTab("more");openMore("notices");}});
-
-/* ======================= "Aur" (more) section ======================= */
-let moreView=null;
-const MORE_TILES=[["notices","📌","Notice board","सूचना पट"],["kinship","🔗","Kaun kiska kya lagta hai","कौन किसका क्या लगता है"],["recipes","🍲","Recipe book","पारिवारिक रसोई"],["stories","📖","Kahaniyan aur kisse","कहानियाँ और किस्से"],["shaadi","💍","Shaadi-rishte","विवाह योग्य"],["emergency","🆘","Emergency card","आपातकालीन कार्ड"],["settings","⚙️","Settings aur madad","सेटिंग और मदद"]];
-function renderMore(){
-  if(isAdmin && !MORE_TILES.some(t=>t[0]==="access")) MORE_TILES.unshift(["access","👥","Family access (admin)","प
+$("#homeExtras").addEventListener("click",e=>{ if(e.target.closest("#kdCard
