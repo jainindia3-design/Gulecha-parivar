@@ -105,6 +105,12 @@ const REL_DEFS={
  "Bhabhi":["brothers","spouse","Female"],"Jija ji":["sisters","spouse","Male"],
  "Devar / Jeth":["husband","sibling","Male"],"Nanad":["husband","sibling","Female"],
  "Saala":["wife","sibling","Male"],"Saali":["wife","sibling","Female"],
+ "Dada sasur":["spouseFather","parent","Male"],"Dadi saas":["spouseFather","parent","Female"],
+ "Nana sasur":["spouseMother","parent","Male"],"Nani saas":["spouseMother","parent","Female"],
+ "Bade sasur (Taau sasur)":["spouseFather","sibling","Male"],"Chacha sasur":["spouseFather","sibling","Male"],"Bua saas":["spouseFather","sibling","Female"],
+ "Badi saas (Taai saas)":["spouseFatherBro","spouse","Female"],"Chachi saas":["spouseFatherBro","spouse","Female"],"Fufa sasur":["spouseFatherSis","spouse","Male"],
+ "Mama sasur":["spouseMother","sibling","Male"],"Mausi saas":["spouseMother","sibling","Female"],"Mami saas":["spouseMotherBro","spouse","Female"],"Mausa sasur":["spouseMotherSis","spouse","Male"],
+ "Devrani / Jethani / Salhaj":["spouseBrothers","spouse","Female"],"Nandoi / Saadhu":["spouseSisters","spouse","Male"],
  "Chachera / Mamera bhai":["fatherSibs+motherSibs","child","Male"],"Chacheri / Mameri behen":["fatherSibs+motherSibs","child","Female"],
 };
 const REL_LIST=["",...Object.keys(REL_DEFS)];
@@ -139,7 +145,7 @@ const SECTIONS = [
     ["siblings","Bhai-behen",{area:1}],
   ]},
   { t:"Family Tree ke liye jodo", note:"Sabse aasaan: neeche “Ek rishta jodo” mein bas ek rishta chuno (jaise “Amit ki Behen”) – mata-pita, bhai-behen, chacha, bua, mama sab rishte apne aap jud jayenge. Ya seedha pita / mata / jeevansaathi chuno.", f:[
-    ["q_member","⚡ Ek rishta jodo: kiske…",{member:1}],
+    ["q_member","⚡ Ek rishta jodo – ye vyakti, kiske…",{member:1}],
     ["q_type","…kya lagte hain?",{sel:REL_LIST}],
     ["father_id","Pita (app mein se)",{member:1}],
     ["mother_id","Mata (app mein se)",{member:1}],
@@ -622,6 +628,17 @@ function biodataText(m){
   SECTIONS.forEach(s=>{ if(s.t.startsWith("Documents")) return; const rows=sectionRows(m,s); if(rows.length) out+=`\n— ${s.t} —\n`+rows.map(([l,v])=>`${l}: ${v}`).join("\n")+"\n"; });
   return out.trim();
 }
+function wrongParents(m){ const out=[]; [m.father_id,m.mother_id].forEach(pid=>{ const p=byId(pid); if(p&&p.dob&&m.dob&&p.dob>m.dob) out.push(p); }); return out; }
+async function fixReversed(m,kidId){
+  const bad=wrongParents(m); if(!bad.length) return; const k=byId(kidId); if(!k) return; const sp=spouseOf(m);
+  try{
+    const mu={}; bad.forEach(p=>{ if(p.id===m.father_id) mu.father_id=""; if(p.id===m.mother_id) mu.mother_id=""; });
+    await db.collection("members").doc(m.id).update(mu); Object.assign(m,mu);
+    const u={}; if(m.gender==="Female"){ u.mother_id=m.id; if(sp) u.father_id=sp.id; } else { u.father_id=m.id; if(sp) u.mother_id=sp.id; }
+    await db.collection("members").doc(k.id).update(u); Object.assign(k,u);
+    toast("Rishta seedha ho gaya ✓"); renderAll(); openView(m.id);
+  }catch(e){ console.error(e); toast("Nahi hua – sirf admin ya khud woh vyakti badal sakta hai"); }
+}
 function openView(id){
   const m=byId(id); if(!m) return; current=id;
   const mine=m.id===uid||isAdmin;
@@ -640,6 +657,9 @@ function openView(id){
       <div class="mrel">${esc(m.relation||"")}${m.nickname?` · “${esc(m.nickname)}”`:""}</div>
       ${m.id===uid?'<span class="pill me">Aapka biodata</span>':""}
     </div></div>
+    ${(()=>{ const bad=wrongParents(m); if(!bad.length) return "";
+      return `<div class="notice err">⚠️ Rishta ulta juda lagta hai: <b>${esc(bad.map(p=>p.name).join(", "))}</b> ko ${esc((m.name||"").split(" ")[0])} ka mata/pita chuna gaya hai, jabki woh umar mein chhote hain.
+        ${(isAdmin||canEditMember(m))?`<div style="margin-top:8px">Sahi karne ke liye chuno – inka asli beta/beti kaun hai:</div><div class="footer-actions" style="justify-content:flex-start">${bad.map(p=>`<button class="btn sm fixRev" data-kid="${esc(p.id)}">✅ ${esc(p.name)}</button>`).join("")}</div>`:""}</div>`; })()}
     ${secs||'<div class="sec">Abhi zyada details nahi bhari gayi.</div>'}
     ${(()=>{ const rels=members.filter(o=>o.id!==m.id).map(o=>({o,r:relTo(o,m)})).filter(x=>x.r).sort((a,b)=>a.r.len-b.r.len||(a.o.dob||"").localeCompare(b.o.dob||""));
       if(!rels.length) return `<div class="sec"><h4>🔗 Inke rishte</h4><p class="sub" style="margin:0;font-size:14px">Abhi koi rishta juda nahi. Edit karke “⚡ Ek rishta jodo” mein ek rishta chuno – baaki apne aap aa jayenge.</p></div>`;
@@ -654,6 +674,7 @@ function openView(id){
   $("#cls").onclick=closeSheet;
   $("#copyBtn").onclick=async()=>{try{await navigator.clipboard.writeText(biodataText(m));toast("Copy ho gaya ✓")}catch(e){toast("Copy nahi hua")}};
   const eb=$("#editBtn"); if(eb) eb.onclick=()=>openForm(m.id);
+  document.querySelectorAll(".fixRev").forEach(b=>b.onclick=()=>fixReversed(m,b.dataset.kid));
   document.querySelectorAll(".relrow").forEach(b=>b.onclick=()=>openView(b.dataset.rid));
   document.querySelectorAll(".vpst").forEach(b=>b.onclick=()=>openPoster(uniq[+b.dataset.vi]));
   const pb=$("#pngBtn"); if(pb) pb.onclick=()=>exportBiodata(m,"png");

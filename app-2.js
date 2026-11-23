@@ -51,7 +51,13 @@ function openForm(id, isNew){
     const c=relVia(X,d[0]); box.style.display="";
     box.innerHTML=c.length?`Kiske through? (${esc(X.name.split(" ")[0])} ke ${esc(VIA_NAME[d[0]]||"")})<select id="qVia">${c.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select>`
       :`<span class="help" style="margin:0">⚠️ ${esc(X.name)} ke ${esc(VIA_NAME[d[0]]||"")} abhi app mein nahi hain. Pehle unka biodata jodo, phir ye rishta judega.</span>`; };
-  f.q_member.addEventListener("change",viaUpd); f.q_type.addEventListener("change",viaUpd);
+  const preview=()=>{ let pv=$("#qPrev"); if(!pv){ pv=document.createElement("div"); pv.id="qPrev"; pv.className="help"; pv.style.margin="6px 0 0"; pv.style.gridColumn="1/-1"; f.q_type.closest("label").after(pv); }
+    const X=byId(f.q_member.value), t=f.q_type.value, nm=(f.name.value||"Ye vyakti").trim();
+    if(!X||!t){ pv.style.display="none"; return; } pv.style.display="";
+    let warn=""; const d=REL_DEFS[t]; const myDob=f.dob.value;
+    if(d&&myDob&&X.dob){ const older=myDob<X.dob; if(["parent"].includes(d[1])&&d[0]==="self"&&!older) warn="⚠️ Umar ke hisaab se ye ulta lag raha hai – dhyan se chuno!"; if(d[1]==="child"&&d[0]==="self"&&older) warn="⚠️ Umar ke hisaab se ye ulta lag raha hai – kya aap “Pita/Mata” chunna chahte the?"; }
+    pv.innerHTML=`➡️ <b>${esc(nm)}</b>, <b>${esc(X.name)}</b> ke <b>${esc(t)}</b> hain.${warn?`<br><span style="color:#b3261e">${warn}</span>`:""}`; };
+  f.q_member.addEventListener("change",()=>{viaUpd();preview();}); f.q_type.addEventListener("change",()=>{viaUpd();preview();}); f.name.addEventListener("input",preview); f.dob.addEventListener("change",preview);
   f.dob.addEventListener("change",()=>autoTithi(true));
   f.tob.addEventListener("change",()=>autoTithi(true));
   autoTithi(false);
@@ -74,7 +80,7 @@ async function shrinkPhoto(file,max,limit){
   return out;
 }
 let saving=false;
-const VIA_NAME={father:"pita",mother:"mata",spouse:"pati/patni",husband:"pati",wife:"patni",sons:"beta",daughters:"beti",brothers:"bhai",sisters:"behen",fatherBro:"chacha/taau",fatherSis:"bua",motherBro:"mama",motherSis:"mausi","fatherSibs+motherSibs":"chacha/bua/mama/mausi"};
+const VIA_NAME={spouseFather:"sasur",spouseMother:"saas",spouseFatherBro:"chacha sasur / bade sasur",spouseFatherSis:"bua saas",spouseMotherBro:"mama sasur",spouseMotherSis:"mausi saas",spouseBrothers:"pati/patni ke bhai",spouseSisters:"pati/patni ki behen",father:"pita",mother:"mata",spouse:"pati/patni",husband:"pati",wife:"patni",sons:"beta",daughters:"beti",brothers:"bhai",sisters:"behen",fatherBro:"chacha/taau",fatherSis:"bua",motherBro:"mama",motherSis:"mausi","fatherSibs+motherSibs":"chacha/bua/mama/mausi"};
 function siblingsOf(m){ if(!m) return []; return members.filter(k=>k.id!==m.id&&((k.father_id&&k.father_id===m.father_id)||(k.mother_id&&k.mother_id===m.mother_id)||k.sib_of===m.id||m.sib_of===k.id||(k.sib_of&&k.sib_of===m.sib_of))); }
 function childrenOf(m){ return m?members.filter(k=>k.father_id===m.id||k.mother_id===m.id):[]; }
 function relVia(X,via){
@@ -88,6 +94,13 @@ function relVia(X,via){
     case "fatherBro": return G2(siblingsOf(fa),"Male"); case "fatherSis": return G2(siblingsOf(fa),"Female");
     case "motherBro": return G2(siblingsOf(mo),"Male"); case "motherSis": return G2(siblingsOf(mo),"Female");
     case "fatherSibs+motherSibs": return [...siblingsOf(fa),...siblingsOf(mo)];
+  }
+  const sfa=sp&&byId(sp.father_id), smo=sp&&byId(sp.mother_id);
+  switch(via){
+    case "spouseFather": return sfa?[sfa]:[]; case "spouseMother": return smo?[smo]:[];
+    case "spouseFatherBro": return G2(siblingsOf(sfa),"Male"); case "spouseFatherSis": return G2(siblingsOf(sfa),"Female");
+    case "spouseMotherBro": return G2(siblingsOf(smo),"Male"); case "spouseMotherSis": return G2(siblingsOf(smo),"Female");
+    case "spouseBrothers": return G2(siblingsOf(sp),"Male"); case "spouseSisters": return G2(siblingsOf(sp),"Female");
   } return [];
 }
 function linkAs(data,M,link,later){
@@ -335,6 +348,15 @@ function kinTerm(path,A,B){
     case "CSP": return G(A,"Samdhi","Samdhan");
     case "PCSP": return "Bhai/Behen ke saas-sasur";
     case "SCS": return G(A,"Damaad","Bahu");
+    case "SPPP": return G(A,"Pardada sasur","Pardadi saas");
+    case "SPPC": { const s4=path[3]&&path[3].to; if(isM(s2)){ if(isF(A)) return "Bua saas"; const o=older(A,s2); return o===null?"Chacha sasur / Bade sasur":o?"Bade sasur (Taau sasur)":"Chacha sasur"; }
+      if(isF(s2)) return G(A,"Mama sasur","Mausi saas"); return G(A,"Chacha/Mama sasur","Bua/Mausi saas"); }
+    case "SPPCS": { const s4=path[3]&&path[3].to; if(isM(s2)) return isM(s4)?(older(s4,s2)?"Badi saas (Taai saas)":"Chachi saas"):"Fufa sasur";
+      if(isF(s2)) return isM(s4)?"Mami saas":"Mausa sasur"; return "Rishtedaar (sasural)"; }
+    case "PCCS": return isM(s2)?G(A,"Bhatiji-jamai","Bhatij-bahu"):isF(s2)?G(A,"Bhanji-jamai","Bhanj-bahu"):G(A,"Jamai","Bahu");
+    case "PCCSP": return G(A,"Samdhi","Samdhan");
+    case "CSPC": return G(A,"Samdhi ke bhai","Samdhi ki behen");
+    case "PPCCS": return G(A,"Cousin ke pati","Cousin ki patni (Bhabhi)");
     case "SPS": return G(A,"Sasur","Saas");
     case "SPCC": return isF(B)?(isM(s2)?G(A,"Bhatija","Bhatiji"):G(A,"Bhanja","Bhanji")):(isM(s2)?G(A,"Bhatija (saale ka)","Bhatiji (saale ki)"):G(A,"Bhanja (saali ka)","Bhanji (saali ki)"));
     case "PPPC": return side==="f"?G(A,"Dada ji ke bhai (Bade/Chhote Dada)","Bua Dadi"):G(A,"Nana ji ke bhai","Nani ji ki behen");
