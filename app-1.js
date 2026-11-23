@@ -660,6 +660,13 @@ function openView(id){
     ${(()=>{ const bad=wrongParents(m); if(!bad.length) return "";
       return `<div class="notice err">⚠️ Rishta ulta juda lagta hai: <b>${esc(bad.map(p=>p.name).join(", "))}</b> ko ${esc((m.name||"").split(" ")[0])} ka mata/pita chuna gaya hai, jabki woh umar mein chhote hain.
         ${(isAdmin||canEditMember(m))?`<div style="margin-top:8px">Sahi karne ke liye chuno – inka asli beta/beti kaun hai:</div><div class="footer-actions" style="justify-content:flex-start">${bad.map(p=>`<button class="btn sm fixRev" data-kid="${esc(p.id)}">✅ ${esc(p.name)}</button>`).join("")}</div>`:""}</div>`; })()}
+    ${(()=>{ const sp=spouseOf(m); if(!sp) return ""; const same=[]; if(m.father_id&&m.father_id===sp.father_id) same.push(["father_id","pita"]); if(m.mother_id&&m.mother_id===sp.mother_id) same.push(["mother_id","mata"]);
+      if(!same.length) return ""; const can=isAdmin||canEditMember(m);
+      return `<div class="notice err">⚠️ <b>${esc(m.name)}</b> aur <b>${esc(sp.name)}</b> pati-patni hain, par dono ke ${same.map(x=>x[1]).join("/")} ek hi (${esc(same.map(x=>(byId(m[x[0]])||{}).name).join(", "))}) jude hain. Jo galat hai use hatao:
+        <div class="footer-actions" style="justify-content:flex-start">${same.map(([k,l])=>`${can?`<button class="btn sm unlink" data-who="${esc(m.id)}" data-k="${k}">✕ ${esc(m.name.split(" ")[0])} ke ${l} hatao</button>`:""}${(isAdmin||canEditMember(sp))?`<button class="btn sm plain unlink" data-who="${esc(sp.id)}" data-k="${k}">✕ ${esc(sp.name.split(" ")[0])} ke ${l} hatao</button>`:""}`).join("")}</div></div>`; })()}
+    ${(()=>{ const can=isAdmin||canEditMember(m); const L3=[["father_id","Pita"],["mother_id","Mata"],["spouse_id","Pati / Patni"],["sib_of","Bhai/Behen (seedha joda)"]].filter(([k])=>byId(m[k]));
+      if(!L3.length||!can) return "";
+      return `<div class="sec"><h4>✏️ Jode gaye rishte (galat ho to hatao)</h4>${L3.map(([k,l])=>`<div class="relrow" style="cursor:default"><span class="rn">${esc(l)}: ${esc(byId(m[k]).name)}</span><button class="linkbtn unlink" data-who="${esc(m.id)}" data-k="${k}">✕ hatao</button></div>`).join("")}</div>`; })()}
     ${secs||'<div class="sec">Abhi zyada details nahi bhari gayi.</div>'}
     ${(()=>{ const rels=members.filter(o=>o.id!==m.id).map(o=>({o,r:relTo(o,m)})).filter(x=>x.r).sort((a,b)=>a.r.len-b.r.len||(a.o.dob||"").localeCompare(b.o.dob||""));
       if(!rels.length) return `<div class="sec"><h4>🔗 Inke rishte</h4><p class="sub" style="margin:0;font-size:14px">Abhi koi rishta juda nahi. Edit karke “⚡ Ek rishta jodo” mein ek rishta chuno – baaki apne aap aa jayenge.</p></div>`;
@@ -674,6 +681,11 @@ function openView(id){
   $("#cls").onclick=closeSheet;
   $("#copyBtn").onclick=async()=>{try{await navigator.clipboard.writeText(biodataText(m));toast("Copy ho gaya ✓")}catch(e){toast("Copy nahi hua")}};
   const eb=$("#editBtn"); if(eb) eb.onclick=()=>openForm(m.id);
+  document.querySelectorAll(".unlink").forEach(b=>b.onclick=async()=>{ if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Pakka? Dobara dabao"; return; }
+    const who=byId(b.dataset.who), k=b.dataset.k; if(!who) return; const u={[k]:""};
+    try{ await db.collection("members").doc(who.id).update(u);
+      if(k==="spouse_id"){ const o=byId(who.spouse_id); if(o&&o.spouse_id===who.id){ try{ await db.collection("members").doc(o.id).update({spouse_id:""}); o.spouse_id=""; }catch(e){} } }
+      Object.assign(who,u); toast("Rishta hata diya ✓"); renderAll(); openView(m.id); }catch(e){ console.error(e); toast("Nahi hua – sirf admin ya khud woh vyakti badal sakta hai"); } });
   document.querySelectorAll(".fixRev").forEach(b=>b.onclick=()=>fixReversed(m,b.dataset.kid));
   document.querySelectorAll(".relrow").forEach(b=>b.onclick=()=>openView(b.dataset.rid));
   document.querySelectorAll(".vpst").forEach(b=>b.onclick=()=>openPoster(uniq[+b.dataset.vi]));
