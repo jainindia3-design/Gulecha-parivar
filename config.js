@@ -11,4 +11,4 @@ window.FIREBASE_CONFIG = {
 
 /* ADMIN – jo family list sambhalenge (+91 ke saath poora number).
    Yahi number firestore.rules file mein bhi hai.                    */
-window.ADMINS = ["+919328404536"];
+window.ADMINS = ["+919328404536", "jainindia3@gmail.com"];
