@@ -36,7 +36,11 @@ function loadCache(){ try{ const c=JSON.parse(localStorage.getItem(CK)||"null");
   if(canWrite===false) setStatus("Aap biodata dekh sakte ho. Apna bharne ke liye owner se <b>Contributor</b> access maango.");
   db.collection("members").onSnapshot(snap=>{
     clearTimeout(timer); loaded=true; members=docsFrom(snap);
-    if(user&&user.key&&!byId(uid)){ const mine=members.find(m=>m.ownerKey&&m.ownerKey===user.key); if(mine) uid=mine.id; }
+    if(user&&user.key&&!byId(uid)){ const mine=members.filter(m=>myOwn(m)&&m.alive!=="Swargiya").sort((a,b)=>(a.dob||"9999").localeCompare(b.dob||"9999"))[0]; if(mine) uid=mine.id; }
+    if(isAdmin && !window._healed && db){ window._healed=true;
+      members.forEach(m=>{ const u={}; if(!m.ownerKey){ const k=normKey(m.mobile)||normKey(m.whatsapp); if(k) u.ownerKey=k; }
+        if(!m.ownerEmail && m.email && m.email.includes("@")) u.ownerEmail=m.email.trim().toLowerCase();
+        if(Object.keys(u).length) db.collection("members").doc(m.id).update(u).catch(()=>{}); }); }
     if(canWrite!==false) setStatus("");
     renderAll(); refreshOpen(); saveCache();
   }, err=>{ clearTimeout(timer); console.error(err); setStatus("Data load nahi hua. Page dobara kholo.",true); });

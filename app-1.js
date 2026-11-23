@@ -206,7 +206,8 @@ function age(dob,until){if(!dob)return null;const d=new Date(dob+"T00:00:00");if
 function fmtDate(v){if(!v)return"";const d=new Date(v+"T00:00:00");if(isNaN(d))return v;return d.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
 const isGone=m=>m.alive==="Swargiya";
 const byId=id=>members.find(m=>m.id===id);
-function canEditMember(m){ if(canWrite===false) return false; return isAdmin || (uid && (m.id===uid || m.createdBy===uid)); }
+function myOwn(m){ const k=user&&user.key; return !!k && (m.ownerKey===k || m.ownerEmail===k); }
+function canEditMember(m){ if(canWrite===false) return false; return isAdmin || (uid && (m.id===uid || m.createdBy===uid)) || myOwn(m); }
 const canWriteShared=()=>!!db && canWrite!==false;
 
 /* ======================= Panchang helpers ======================= */

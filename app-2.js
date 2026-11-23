@@ -85,6 +85,8 @@ async function save(id,old,isNew){
   if(!data.relation){toast("Rishta bharo (jaise Papa, Bua)");return}
   data.photo = pendingPhoto!==undefined ? pendingPhoto : (old.photo||"");
   if(old.ownerKey) data.ownerKey=old.ownerKey;
+  if(old.ownerEmail) data.ownerEmail=old.ownerEmail;
+  if(isAdmin && !data.ownerEmail && data.email && data.email.includes("@")) data.ownerEmail=data.email.trim().toLowerCase();
   if(isAdmin && !data.ownerKey && data.mobile){ const k=normKey(data.mobile); if(k) data.ownerKey=k; }
   data.updatedAt=Date.now(); data.updatedBy=uid; data.createdBy=old.createdBy||uid;
   const docId = id || ("m_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
@@ -475,7 +477,7 @@ async function renderAccess(){
     let mid=$("#acMem").value; if(!mid){ const m=members.find(x=>normKey(x.mobile)===key||normKey(x.whatsapp)===key||(x.email||"").toLowerCase()===key); if(m) mid=m.id; }
     const nm=$("#acName").value.trim()||(byId(mid)||{}).name||"";
     try{ await db.collection("allowed").doc(key).set({name:nm,memberId:mid||"",addedAt:Date.now(),addedBy:uid});
-      if(mid){ try{ await db.collection("members").doc(mid).update({ownerKey:key}); }catch(e){} }
+      if(mid){ try{ await db.collection("members").doc(mid).update(key.includes("@")?{ownerEmail:key}:{ownerKey:key}); }catch(e){} }
       toast(`${nm||key} jud gaye ✓`+(mid?" (biodata bhi link)":"")); $("#acKey").value="";$("#acName").value=""; load(); }catch(e){ console.error(e); toast("Nahi jud paaya – kya aap admin ho?"); } };
   load();
 }
