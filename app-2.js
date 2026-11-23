@@ -272,9 +272,9 @@ $("#homeExtras").addEventListener("click",e=>{ if(e.target.closest("#kdCard")){ 
 
 /* ======================= "Aur" (more) section ======================= */
 let moreView=null;
-const MORE_TILES=[["notices","📌","Notice board","सूचना पट"],["kinship","🔗","Kaun kiska kya lagta hai","कौन किसका क्या लगता है"],["recipes","🍲","Recipe book","पारिवारिक रसोई"],["stories","📖","Kahaniyan aur kisse","कहानियाँ और किस्से"],["shaadi","💍","Shaadi-rishte","विवाह योग्य"],["emergency","🆘","Emergency card","आपातकालीन कार्ड"],["settings","⚙️","Settings aur madad","सेटिंग और मदद"]];
+const MORE_TILES=[["directory","📖","Parivar directory (PDF)","परिवार डायरेक्टरी"],["notices","📌","Notice board","सूचना पट"],["kinship","🔗","Kaun kiska kya lagta hai","कौन किसका क्या लगता है"],["recipes","🍲","Recipe book","पारिवारिक रसोई"],["stories","📖","Kahaniyan aur kisse","कहानियाँ और किस्से"],["shaadi","💍","Shaadi-rishte","विवाह योग्य"],["emergency","🆘","Emergency card","आपातकालीन कार्ड"],["settings","⚙️","Settings aur madad","सेटिंग और मदद"]];
 function renderMore(){
-  if(isAdmin && !MORE_TILES.some(t=>t[0]==="access")) MORE_TILES.unshift(["access","👥","Family access (admin)","परिवार एक्सेस (एडमिन)"],["import","📥","Purana data laao (admin)","पुराना डेटा लाएँ (एडमिन)"]);
+  if(isAdmin && !MORE_TILES.some(t=>t[0]==="access")) MORE_TILES.unshift(["access","👥","Family access (admin)","परिवार एक्सेस (एडमिन)"],["import","📥","Purana data laao (admin)","पुराना डेटा लाएँ (एडमिन)"],["dash","📊","Admin dashboard","एडमिन डैशबोर्ड"],["backup","📦","Backup","बैकअप"]);
   if(!moreView){
     $("#more").innerHTML=`<div class="tiles">${MORE_TILES.map(([k,ic,hn,hi])=>`<button class="tile" data-k="${k}"><span>${ic}</span>${esc(L(hn,hi))}</button>`).join("")}</div>`;
     $("#more").querySelectorAll(".tile").forEach(b=>b.onclick=()=>openMore(b.dataset.k)); return;
@@ -282,7 +282,7 @@ function renderMore(){
   const t=MORE_TILES.find(x=>x[0]===moreView);
   $("#more").innerHTML=`<button class="back" id="moreBack">‹ ${L("Wapas","वापस")}</button><h2 class="mh">${t[1]} ${esc(L(t[2],t[3]))}</h2><div id="moreBody"></div>`;
   $("#moreBack").onclick=()=>{moreView=null;renderMore()};
-  ({notices:renderNotices,kinship:renderKinship,recipes:()=>renderCrud("recipes"),stories:()=>renderCrud("stories"),shaadi:renderShaadi,emergency:renderEmergencyInto,settings:renderSettings,access:renderAccess,import:renderImport})[moreView]();
+  ({notices:renderNotices,kinship:renderKinship,recipes:()=>renderCrud("recipes"),stories:()=>renderCrud("stories"),shaadi:renderShaadi,emergency:renderEmergencyInto,settings:renderSettings,access:renderAccess,import:renderImport,dash:renderDash,backup:renderBackup,directory:renderDirectory})[moreView]();
 }
 function openMore(k){moreView=k;renderMore();window.scrollTo(0,0)}
 

@@ -188,6 +188,9 @@ const SECTIONS = [
     ["kundli","Kundli / Guna details",{area:1,full:1}],
     ["pref","Jeevansaathi kaisa chahiye",{area:1,full:1}],
   ]},
+  { t:"Privacy", note:"Jo cheezein sirf admin (aur aap khud) dekh sakein, unhe tick karo. Baaki family ko ye nahi dikhengi.", f:[
+    ["hide","Sirf admin ko dikhe",{checks:["Mobile","WhatsApp","Email","Pata (address)","Income","Health notes"],full:1}],
+  ]},
   { t:"Documents – sirf expiry date", note:"Sirf expiry date daalo, document number kabhi mat daalna. Expiry se pehle calendar mein yaad dilayega.", f:[
     ["exp_passport","Passport expiry",{type:"date"}],
     ["exp_license","Driving licence expiry",{type:"date"}],
@@ -207,7 +210,7 @@ const SECTIONS = [
 const ALL_FIELDS = SECTIONS.flatMap(s=>s.f);
 const HS=["hs_year","hs_month","hs_paksha","hs_tithi"];
 const DOCS=[["exp_passport","Passport"],["exp_license","Driving licence"],["exp_health","Health insurance"],["exp_life","Life insurance premium"],["exp_vehicle","Gaadi insurance"],["exp_puc","PUC"]];
-const HIDE_IN_VIEW=new Set(["relation","q_member","q_type","name","father_id","mother_id","spouse_id","alive","exp_other_name"]);
+const HIDE_IN_VIEW=new Set(["hide","relation","q_member","q_type","name","father_id","mother_id","spouse_id","alive","exp_other_name"]);
 const PDF_SKIP=new Set(["q_member","q_type","vrat","school","standard","activity","vac_name","vac_date","medical","emergency","income","father_id","mother_id","spouse_id","alive","dod","memories","email","address","whatsapp",...DOCS.map(d=>d[0]),"exp_other","exp_other_name"]);
 
 /* ======================= State ======================= */
@@ -604,12 +607,16 @@ function viewValue(m,k){
   if(k==="exp_other") v=`${m.exp_other_name||"Document"}: ${fmtDate(m.exp_other)}`;
   return v;
 }
+const PRIV_KEYS={"Mobile":"mobile","WhatsApp":"whatsapp","Email":"email","Pata (address)":"address","Income":"income","Health notes":"medical"};
+function canSeePrivate(m){ return isAdmin || m.id===uid || (typeof myOwn==="function"&&myOwn(m)); }
+function isPrivate(m,k){ if(!m.hide||canSeePrivate(m)) return false; return String(m.hide).split(",").some(x=>PRIV_KEYS[x]===k); }
 function sectionRows(m,s,skip){
   const rows=[];
   s.f.forEach(([k,l])=>{
     if(skip&&skip.has(k)) return;
     if(k==="hs_year"){ const tt=tithiText(birthTithi(m)); if(tt) rows.push(["Janam tithi (Hindu)",tt]); return; }
     if(HS.includes(k)||HIDE_IN_VIEW.has(k)||!m[k]) return;
+    if(isPrivate(m,k)) return;
     rows.push([fieldLabel(k,l).replace(/\s*\(.*\)$/,"").replace(/\s*–.*$/,""),k==="vrat"?String(m[k]).split(",").join(", "):viewValue(m,k)]);
   });
   if(s.t.startsWith("Swargiya") && isGone(m) && (!skip)){
