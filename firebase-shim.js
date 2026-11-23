@@ -91,6 +91,68 @@
           msg("");
           const ph=normPhone(el.querySelector("#aPhone").value);
           if(!ph){ msg("10 digit ka mobile number daalo"); return; }
+/* Gulecha Parivar – Firebase connection (login + database + share/download).
+   Exposes window.claude.use("db" | "user" | "downloads") so the app code stays the same. */
+(function(){
+  const V="10.12.2", BASE=`https://www.gstatic.com/firebasejs/${V}/`;
+  const ADMINS=(window.ADMINS||[]).map(s=>String(s).trim().toLowerCase());
+  let ready=null;
+
+  /* ---------- login screen ---------- */
+  function shell(html){
+    let el=document.getElementById("authScreen");
+    if(!el){ el=document.createElement("div"); el.id="authScreen"; document.body.appendChild(el); }
+    el.innerHTML=`<div class="auth-card"><div class="auth-logo">${window.LOGO_SVG_RAW||""}</div>
+      <h1 class="auth-title">Gulecha <span>Parivar</span></h1><p class="auth-sub">गुलेच्छा परिवार का अपना ऐप</p><div class="auth-kd">॥ जय सच्चियाय माता ॥</div>${html}</div>`;
+    el.style.display="flex"; return el;
+  }
+  function hideShell(){ const el=document.getElementById("authScreen"); if(el) el.style.display="none"; }
+  const normPhone=v=>{ let d=String(v||"").replace(/[^\d+]/g,""); if(d.startsWith("+")) return d; d=d.replace(/^0+/,""); if(d.length===10) return "+91"+d; if(d.length===12&&d.startsWith("91")) return "+"+d; return ""; };
+
+  function loginUI(A,auth){
+    return new Promise(resolve=>{
+      let verifier=null;
+      const emailStep=()=>{
+        const el=shell(`<div class="auth-tabs"><button class="on">✉️ Email</button><button id="tOtp">📱 Mobile OTP</button></div>
+          <label class="auth-l">Email</label>
+          <input id="eMail" class="auth-in" type="email" autocomplete="email" placeholder="aapka@gmail.com">
+          <label class="auth-l">Password <small>(kam se kam 6 akshar)</small></label>
+          <input id="ePass" class="auth-in" type="password" autocomplete="current-password" placeholder="••••••">
+          <button class="auth-btn" id="eLogin">Login karo</button>
+          <button class="auth-btn ghost" id="eNew">Pehli baar? Naya account banao</button>
+          <div id="aMsg" class="auth-msg"></div>
+          <button class="auth-link" id="eForgot">Password bhool gaye?</button>
+          <button class="auth-link" id="aGoogle">ya Google (Gmail) se login karo</button>`);
+        const msg=(t,ok)=>{const m=el.querySelector("#aMsg");m.textContent=t;m.style.color=ok?"#2f7d5b":"";};
+        const val=()=>[el.querySelector("#eMail").value.trim().toLowerCase(),el.querySelector("#ePass").value];
+        const err=e=>{const c=e.code||"";return /invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)?"Email ya password galat hai. Pehli baar ho to 'Naya account banao' dabao.":/email-already-in-use/.test(c)?"Is email ka account pehle se hai – 'Login karo' dabao (ya Google se login karo).":/weak-password/.test(c)?"Password kam se kam 6 akshar ka rakho.":/invalid-email/.test(c)?"Email sahi likho.":/too-many/.test(c)?"Bahut baar koshish hui – thodi der baad try karo.":/operation-not-allowed/.test(c)?"Email login Firebase mein band hai.":"Nahi hua: "+(c||e.message);};
+        el.querySelector("#tOtp").onclick=step1;
+        el.querySelector("#eLogin").onclick=async()=>{const [e,p]=val(); if(!e||!p){msg("Email aur password dono daalo");return}
+          msg("Login ho raha hai…",true); try{ await A.signInWithEmailAndPassword(auth,e,p); }catch(x){ msg(err(x)); } };
+        el.querySelector("#eNew").onclick=async()=>{const [e,p]=val(); if(!e||p.length<6){msg("Email daalo aur 6+ akshar ka password chuno");return}
+          msg("Account ban raha hai…",true); try{ const c=await A.createUserWithEmailAndPassword(auth,e,p); try{ await A.sendEmailVerification(c.user); }catch(_){} }catch(x){ msg(err(x)); } };
+        el.querySelector("#eForgot").onclick=async()=>{const [e]=val(); if(!e){msg("Upar email likho, phir ye dabao");return}
+          try{ await A.sendPasswordResetEmail(auth,e); msg("Password badalne ka link "+e+" pe bhej diya ✓ (Spam folder bhi dekhna)",true); }catch(x){ msg(err(x)); } };
+        el.querySelector("#aGoogle").onclick=async()=>{ msg(""); try{ await A.signInWithPopup(auth,new A.GoogleAuthProvider()); }catch(e){ msg(/operation-not-allowed/.test(e.code)?"Google login abhi band hai.":"Google login nahi hua: "+(e.code||e.message)); } };
+      };
+      const step1=()=>{
+        const el=shell(`<div class="auth-tabs"><button id="tEmail">✉️ Email</button><button class="on">📱 Mobile OTP</button></div><label class="auth-l">Apna mobile number</label>
+          <div class="auth-phone"><span>+91</span><input id="aPhone" type="tel" inputmode="numeric" maxlength="10" placeholder="98XXXXXXXX" autocomplete="tel-national"></div>
+          <div id="recap" style="display:flex;justify-content:center;margin:4px 0 12px;min-height:78px"></div>
+          <button class="auth-btn" id="aSend">OTP bhejo</button>
+          <div id="aMsg" class="auth-msg"></div>
+          <button class="auth-link" id="aGoogle">ya Google (Gmail) se login karo</button>`);
+        const msg=t=>{el.querySelector("#aMsg").textContent=t};
+        const makeVerifier=()=>{ try{ if(verifier){ verifier.clear(); } }catch(e){}
+          el.querySelector("#recap").innerHTML="";
+          try{ verifier=new A.RecaptchaVerifier(auth,"recap",{size:"normal",callback:()=>msg(""),"expired-callback":()=>msg("Robot-check dobara karo")}); verifier.render().catch(e=>msg("Robot-check load nahi hua: "+(e.code||e.message))); }
+          catch(e){ console.error(e); msg("Robot-check load nahi hua: "+(e.code||e.message)); } };
+        el.querySelector("#tEmail").onclick=()=>{ try{ if(verifier) verifier.clear(); }catch(e){} verifier=null; emailStep(); };
+        makeVerifier();
+        el.querySelector("#aSend").onclick=async()=>{
+          msg("");
+          const ph=normPhone(el.querySelector("#aPhone").value);
+          if(!ph){ msg("10 digit ka mobile number daalo"); return; }
           const b=el.querySelector("#aSend"); b.disabled=true; b.textContent="Bhej rahe hain…";
           const t=setTimeout(()=>{ msg("Thoda samay lag raha hai… upar 'I'm not a robot' tick karo, phir dobara OTP bhejo."); b.disabled=false; b.textContent="OTP bhejo"; },20000);
           try{ const conf=await A.signInWithPhoneNumber(auth,ph,verifier); clearTimeout(t); step2(ph,conf); }
@@ -111,7 +173,7 @@
         el.querySelector("#aVerify").onclick=go; el.querySelector("#aOtp").oninput=e=>{ if(e.target.value.length===6) go(); };
         el.querySelector("#aBack").onclick=step1; el.querySelector("#aOtp").focus();
       };
-      step1(); resolve();
+      emailStep(); resolve();
     });
   }
 
@@ -126,6 +188,16 @@
       const auth=A.getAuth(app); auth.languageCode="hi";
       let fs; try{ fs=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ fs=F.getFirestore(app); }
       const u=await new Promise(res=>{ let shown=false; A.onAuthStateChanged(auth,usr=>{ if(usr) res(usr); else if(!shown){ shown=true; loginUI(A,auth); } }); });
+      if(!u.phoneNumber && u.email && !u.emailVerified){
+        const el=shell(`<p class="auth-msg" style="color:#2b2220">📧 <b>${u.email}</b> pe ek <b>verification link</b> bheja gaya hai.<br><br>Email kholke link dabao (Spam folder bhi dekhna), phir neeche button dabao.</p>
+          <button class="auth-btn" id="vDone">Verify kar liya – aage badho</button>
+          <button class="auth-btn ghost" id="vAgain">Link dobara bhejo</button><div id="aMsg" class="auth-msg"></div>
+          <button class="auth-link" id="vOut">Doosre email se login</button>`);
+        el.querySelector("#vDone").onclick=async()=>{ try{ await u.reload(); await u.getIdToken(true); }catch(e){} if(auth.currentUser&&auth.currentUser.emailVerified) location.reload(); else el.querySelector("#aMsg").textContent="Abhi verify nahi hua – email ka link dabao."; };
+        el.querySelector("#vAgain").onclick=async()=>{ try{ await A.sendEmailVerification(u); el.querySelector("#aMsg").textContent="Link dobara bhej diya ✓"; }catch(e){ el.querySelector("#aMsg").textContent="Thodi der baad try karo."; } };
+        el.querySelector("#vOut").onclick=()=>A.signOut(auth).then(()=>location.reload());
+        return new Promise(()=>{});
+      }
       const key=(u.phoneNumber||(u.email||"")).toLowerCase();
       const admin=ADMINS.includes(key);
       let allowed=admin;
@@ -175,6 +247,4 @@
     if(name==="downloads") return downloadsApi;
     return null;
   }};
-})();
-
 })();
