@@ -87,6 +87,27 @@ const Panchang = (()=>{
   return { compute, findInYear, findInYearT, yearDays, MAAS };
 })();
 /* ======================= Fields ======================= */
+const REL_DEFS={
+ "Pita (Papa)":["self","parent","Male"],"Mata (Mummy)":["self","parent","Female"],
+ "Beta":["self","child","Male"],"Beti":["self","child","Female"],
+ "Bhai":["self","sibling","Male"],"Behen":["self","sibling","Female"],
+ "Pati":["self","spouse","Male"],"Patni":["self","spouse","Female"],
+ "Dada ji":["father","parent","Male"],"Dadi ji":["father","parent","Female"],
+ "Nana ji":["mother","parent","Male"],"Nani ji":["mother","parent","Female"],
+ "Bade Papa (Taau ji)":["father","sibling","Male"],"Chacha ji":["father","sibling","Male"],"Bua ji (Bhua)":["father","sibling","Female"],
+ "Badi Mummy (Taai ji)":["fatherBro","spouse","Female"],"Chachi ji":["fatherBro","spouse","Female"],"Fufa ji (Phupha)":["fatherSis","spouse","Male"],
+ "Mama ji":["mother","sibling","Male"],"Mausi ji":["mother","sibling","Female"],
+ "Mami ji":["motherBro","spouse","Female"],"Mausa ji":["motherSis","spouse","Male"],
+ "Sasur ji":["spouse","parent","Male"],"Saas ji":["spouse","parent","Female"],
+ "Bahu":["sons","spouse","Female"],"Jamai (Damaad)":["daughters","spouse","Male"],
+ "Pota":["sons","child","Male"],"Poti":["sons","child","Female"],"Naati (Dohita)":["daughters","child","Male"],"Naatin (Dohiti)":["daughters","child","Female"],
+ "Bhatija":["brothers","child","Male"],"Bhatiji":["brothers","child","Female"],"Bhanja":["sisters","child","Male"],"Bhanji":["sisters","child","Female"],
+ "Bhabhi":["brothers","spouse","Female"],"Jija ji":["sisters","spouse","Male"],
+ "Devar / Jeth":["husband","sibling","Male"],"Nanad":["husband","sibling","Female"],
+ "Saala":["wife","sibling","Male"],"Saali":["wife","sibling","Female"],
+ "Chachera / Mamera bhai":["fatherSibs+motherSibs","child","Male"],"Chacheri / Mameri behen":["fatherSibs+motherSibs","child","Female"],
+};
+const REL_LIST=["",...Object.keys(REL_DEFS)];
 const VRAT_OPTS_F=["Ekadashi","Purnima","Amavasya","Pradosh","Sankashti Chaturthi","Karwa Chauth","Navratri","Mahashivratri","Janmashtami","Somvar","Mangalvar","Guruvar","Shanivar"];
 const TITHI_OPTS=["","Pratipada (1)","Dwitiya (2)","Tritiya (3)","Chaturthi (4)","Panchami (5)","Shashthi (6)","Saptami (7)","Ashtami (8)","Navami (9)","Dashami (10)","Ekadashi (11)","Dwadashi (12)","Trayodashi (13)","Chaturdashi (14)","Purnima (15)","Amavasya (30)"];
 const MONTH_OPTS=["","Chaitra","Vaishakh","Jyeshtha","Ashadh","Shravan","Bhadrapad","Ashwin","Kartik","Margashirsha","Paush","Magh","Phalgun"];
@@ -119,7 +140,7 @@ const SECTIONS = [
   ]},
   { t:"Family Tree ke liye jodo", note:"Sabse aasaan: neeche “Ek rishta jodo” mein bas ek rishta chuno (jaise “Amit ki Behen”) – mata-pita, bhai-behen, chacha, bua, mama sab rishte apne aap jud jayenge. Ya seedha pita / mata / jeevansaathi chuno.", f:[
     ["q_member","⚡ Ek rishta jodo: kiske…",{member:1}],
-    ["q_type","…kya lagte hain?",{sel:["","Beta / Beti","Bhai / Behen","Pati / Patni","Pita / Mata"]}],
+    ["q_type","…kya lagte hain?",{sel:REL_LIST}],
     ["father_id","Pita (app mein se)",{member:1}],
     ["mother_id","Mata (app mein se)",{member:1}],
     ["spouse_id","Pati / Patni (app mein se)",{member:1}],

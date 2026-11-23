@@ -45,6 +45,13 @@ function openForm(id, isNew){
     const n=$("#tithiNote"); n.style.display="block";
     n.textContent=`✨ ${tithiText(o)} – English date${tob?" aur janam samay":""} se apne aap nikali gayi. Panchang/kundli se ek baar mila lena.`;
   };
+  const viaUpd=()=>{ const X=byId(f.q_member.value), d=REL_DEFS[f.q_type.value]; let box=$("#qViaBox");
+    if(!box){ box=document.createElement("label"); box.id="qViaBox"; box.className="f full"; f.q_type.closest("label").after(box); }
+    if(!X||!d||d[0]==="self"){ box.innerHTML=""; box.style.display="none"; return; }
+    const c=relVia(X,d[0]); box.style.display="";
+    box.innerHTML=c.length?`Kiske through? (${esc(X.name.split(" ")[0])} ke ${esc(VIA_NAME[d[0]]||"")})<select id="qVia">${c.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select>`
+      :`<span class="help" style="margin:0">⚠️ ${esc(X.name)} ke ${esc(VIA_NAME[d[0]]||"")} abhi app mein nahi hain. Pehle unka biodata jodo, phir ye rishta judega.</span>`; };
+  f.q_member.addEventListener("change",viaUpd); f.q_type.addEventListener("change",viaUpd);
   f.dob.addEventListener("change",()=>autoTithi(true));
   f.tob.addEventListener("change",()=>autoTithi(true));
   autoTithi(false);
@@ -67,14 +74,45 @@ async function shrinkPhoto(file,max,limit){
   return out;
 }
 let saving=false;
+const VIA_NAME={father:"pita",mother:"mata",spouse:"pati/patni",husband:"pati",wife:"patni",sons:"beta",daughters:"beti",brothers:"bhai",sisters:"behen",fatherBro:"chacha/taau",fatherSis:"bua",motherBro:"mama",motherSis:"mausi","fatherSibs+motherSibs":"chacha/bua/mama/mausi"};
+function siblingsOf(m){ if(!m) return []; return members.filter(k=>k.id!==m.id&&((k.father_id&&k.father_id===m.father_id)||(k.mother_id&&k.mother_id===m.mother_id)||k.sib_of===m.id||m.sib_of===k.id||(k.sib_of&&k.sib_of===m.sib_of))); }
+function childrenOf(m){ return m?members.filter(k=>k.father_id===m.id||k.mother_id===m.id):[]; }
+function relVia(X,via){
+  const fa=byId(X.father_id), mo=byId(X.mother_id), sp=spouseOf(X);
+  const G2=(list,g)=>list.filter(p=>!g||p.gender===g);
+  switch(via){
+    case "father": return fa?[fa]:[]; case "mother": return mo?[mo]:[];
+    case "spouse": return sp?[sp]:[]; case "husband": return sp&&sp.gender!=="Female"?[sp]:[]; case "wife": return sp&&sp.gender!=="Male"?[sp]:[];
+    case "sons": return G2(childrenOf(X),"Male"); case "daughters": return G2(childrenOf(X),"Female");
+    case "brothers": return G2(siblingsOf(X),"Male"); case "sisters": return G2(siblingsOf(X),"Female");
+    case "fatherBro": return G2(siblingsOf(fa),"Male"); case "fatherSis": return G2(siblingsOf(fa),"Female");
+    case "motherBro": return G2(siblingsOf(mo),"Male"); case "motherSis": return G2(siblingsOf(mo),"Female");
+    case "fatherSibs+motherSibs": return [...siblingsOf(fa),...siblingsOf(mo)];
+  } return [];
+}
+function linkAs(data,M,link,later){
+  const fem=data.gender==="Female";
+  if(link==="child"){ const sp=spouseOf(M); if(M.gender==="Female"){ data.mother_id=M.id; if(sp) data.father_id=sp.id; } else { data.father_id=M.id; if(sp) data.mother_id=sp.id; } }
+  if(link==="sibling"){ if(M.father_id||M.mother_id){ data.father_id=M.father_id||""; data.mother_id=M.mother_id||""; } else data.sib_of=M.sib_of||M.id; }
+  if(link==="spouse"){ data.spouse_id=M.id; if(!M.spouse_id) later.push([M.id,{spouse_id:"__SELF__"}]); }
+  if(link==="parent"){ later.push([M.id,fem?{mother_id:"__SELF__"}:{father_id:"__SELF__"}]);
+    if(data.spouse_id) later.push([M.id,fem?{father_id:data.spouse_id}:{mother_id:data.spouse_id}]);
+    siblingsOf(M).forEach(s=>{ if(!s.father_id&&!s.mother_id) later.push([s.id,fem?{mother_id:"__SELF__"}:{father_id:"__SELF__"}]); }); }
+}
 async function save(id,old,isNew){
   if(saving) return;
   const fd=new FormData($("#bform")); const data={};
   ALL_FIELDS.forEach(([k,,o])=>{data[k]=o&&o.checks?fd.getAll(k).join(","):String(fd.get(k)||"").trim()});
   if(!data.name){toast("Naam zaroori hai");return}
   const qX=byId(data.q_member), qT=data.q_type; delete data.q_member; delete data.q_type;
+  const qViaId=($("#qVia")||{}).value||"";
   const later=[]; // updates to other members' docs
-  if(qX&&qT){
+  if(qX&&qT&&REL_DEFS[qT]){
+    const [via,link,g]=REL_DEFS[qT]; if(!data.gender) data.gender=g;
+    let M=qX; if(via!=="self"){ const c=relVia(qX,via); M=byId(qViaId)||(c.length===1?c[0]:null);
+      if(!M){ toast(c.length?"“Kiske through” mein vyakti chuno":`${qX.name} ka ${VIA_NAME[via]||"rishta"} pehle app mein jodo`); return; } }
+    linkAs(data,M,link,later);
+  } else if(qX&&qT){
     const xFem=qX.gender==="Female";
     if(qT==="Beta / Beti"){ if(xFem){ data.mother_id=qX.id; const sp=spouseOf(qX); if(sp&&!data.father_id) data.father_id=sp.id; } else { data.father_id=qX.id; const sp=spouseOf(qX); if(sp&&!data.mother_id) data.mother_id=sp.id; } }
     if(qT==="Bhai / Behen"){ if(!qX.father_id&&!qX.mother_id){ toast(`Pehle ${qX.name} ke mata-pita jodo, tab bhai-behen apne aap judenge`); } else { data.father_id=qX.father_id||data.father_id; data.mother_id=qX.mother_id||data.mother_id; } }
@@ -86,6 +124,7 @@ async function save(id,old,isNew){
   data.photo = pendingPhoto!==undefined ? pendingPhoto : (old.photo||"");
   if(old.ownerKey) data.ownerKey=old.ownerKey;
   if(old.ownerEmail) data.ownerEmail=old.ownerEmail;
+  if(old.sib_of && !data.sib_of) data.sib_of=old.sib_of;
   if(isAdmin && !data.ownerEmail && data.email && data.email.includes("@")) data.ownerEmail=data.email.trim().toLowerCase();
   if(isAdmin && !data.ownerKey && data.mobile){ const k=normKey(data.mobile); if(k) data.ownerKey=k; }
   data.updatedAt=Date.now(); data.updatedBy=uid; data.createdBy=old.createdBy||uid;
@@ -252,6 +291,7 @@ function neighbours(m){
   add("P",byId(m.father_id)); add("P",byId(m.mother_id));
   members.forEach(k=>{ if(k.father_id===m.id||k.mother_id===m.id) add("C",k); });
   add("S",spouseOf(m));
+  members.forEach(k=>{ if(k.id===m.id) return; if(k.sib_of===m.id||m.sib_of===k.id||(k.sib_of&&k.sib_of===m.sib_of)) add("B",k); });
   return out;
 }
 function findPath(fromId,toId){
@@ -259,7 +299,9 @@ function findPath(fromId,toId){
   while(q.length){ const id=q.shift(); if(id===toId) break; const m=byId(id); if(!m) continue;
     for(const n of neighbours(m)){ if(n.to.id in prev) continue; prev[n.to.id]={from:id,t:n.t}; q.push(n.to.id); } }
   if(!(toId in prev)) return null;
-  const path=[]; let cur=toId; while(prev[cur]){ path.unshift({t:prev[cur].t,to:byId(cur)}); cur=prev[cur].from; } return path;
+  const path=[]; let cur=toId; while(prev[cur]){ const st={t:prev[cur].t,to:byId(cur)};
+    if(st.t==="B") path.unshift({t:"P",to:{id:"_ph",gender:"",name:""}},{t:"C",to:st.to}); else path.unshift(st); cur=prev[cur].from; }
+  return path;
 }
 const isM=p=>p&&p.gender==="Male", isF=p=>p&&p.gender==="Female";
 const G=(p,m,f)=>isM(p)?m:isF(p)?f:`${m}/${f}`;
@@ -292,6 +334,8 @@ function kinTerm(path,A,B){
     case "SPCS": if(isF(B)) return isM(s3)?(older(s3,s1)?"Jethani":"Devrani"):"Nandoi"; if(isM(B)) return isM(s3)?"Salhaj":"Saadhu"; return "Rishtedaar";
     case "CSP": return G(A,"Samdhi","Samdhan");
     case "PCSP": return "Bhai/Behen ke saas-sasur";
+    case "SCS": return G(A,"Damaad","Bahu");
+    case "SPS": return G(A,"Sasur","Saas");
     case "SPCC": return isF(B)?(isM(s2)?G(A,"Bhatija","Bhatiji"):G(A,"Bhanja","Bhanji")):(isM(s2)?G(A,"Bhatija (saale ka)","Bhatiji (saale ki)"):G(A,"Bhanja (saali ka)","Bhanji (saali ki)"));
     case "PPPC": return side==="f"?G(A,"Dada ji ke bhai (Bade/Chhote Dada)","Bua Dadi"):G(A,"Nana ji ke bhai","Nani ji ki behen");
     case "PPCSP": return "Rishtedaar";
