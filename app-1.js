@@ -120,8 +120,7 @@ const MONTH_OPTS=["","Chaitra","Vaishakh","Jyeshtha","Ashadh","Shravan","Bhadrap
 const SECTIONS = [
   { t:"Personal", f:[
     ["name","Poora naam",{req:1}],
-    ["nickname","Ghar ka naam / Nickname"],
-    ["relation","Family mein rishta (jaise Papa, Bua, Bhaiya)",{req:1}],
+    ["nickname","Ghar ka naam / Nickname (optional)"],
     ["gender","Gender",{sel:["","Male","Female","Other"]}],
     ["dob","Janam tarikh – English date (optional)",{type:"date"}],
     ["tob","Janam samay (optional)",{type:"time"}],
@@ -208,7 +207,7 @@ const SECTIONS = [
 const ALL_FIELDS = SECTIONS.flatMap(s=>s.f);
 const HS=["hs_year","hs_month","hs_paksha","hs_tithi"];
 const DOCS=[["exp_passport","Passport"],["exp_license","Driving licence"],["exp_health","Health insurance"],["exp_life","Life insurance premium"],["exp_vehicle","Gaadi insurance"],["exp_puc","PUC"]];
-const HIDE_IN_VIEW=new Set(["q_member","q_type","name","father_id","mother_id","spouse_id","alive","exp_other_name"]);
+const HIDE_IN_VIEW=new Set(["relation","q_member","q_type","name","father_id","mother_id","spouse_id","alive","exp_other_name"]);
 const PDF_SKIP=new Set(["q_member","q_type","vrat","school","standard","activity","vac_name","vac_date","medical","emergency","income","father_id","mother_id","spouse_id","alive","dod","memories","email","address","whatsapp",...DOCS.map(d=>d[0]),"exp_other","exp_other_name"]);
 
 /* ======================= State ======================= */
@@ -271,7 +270,7 @@ function yearEvents(year){
   const ev=[];
   const push=(iso,o)=>{const p=parseD(iso); if(!p) return; ev.push({iso,m:p.m,d:p.d,cat:"parivar",...o});};
   members.forEach(mb=>{
-    const base={name:mb.name||"",rel:mb.relation||"",id:mb.id,mobile:mb.mobile||mb.whatsapp||"",spouse:mb.spouse_id&&byId(mb.spouse_id)?byId(mb.spouse_id).name:(mb.spouse||"")};
+    const base={name:mb.name||"",rel:"",id:mb.id,mobile:mb.mobile||mb.whatsapp||"",spouse:mb.spouse_id&&byId(mb.spouse_id)?byId(mb.spouse_id).name:(mb.spouse||"")};
     const dob=parseD(mb.dob), ann=parseD(mb.anniversary);
     if(!isGone(mb)){
       if(dob){ const iso=`${year}-${pad(dob.m)}-${pad(dob.d)}`; const n=year-dob.y;
@@ -384,7 +383,7 @@ function renderMembers(){
     return `<button class="mcard${isGone(m)?" gone":""}" data-id="${esc(m.id)}">${avatar(m)}<div>
       <div class="mname">${isGone(m)?"🙏 Swa. ":""}${esc(m.name||"Bina naam")}</div>
       ${(()=>{const me=byId(uid); if(!me||me.id===m.id) return ""; const rr=relTo(m,me); return rr&&rr.exact?`<span class="pill">${m.gender==="Female"?"Aapki":"Aapke"} ${esc(rr.term)}</span>`:"";})()}
-      <div class="mrel">${esc(m.relation||"")}${a!==null?` · ${a} saal`:""}${m.city&&!isGone(m)?` · ${esc(m.city)}`:""}</div>
+      <div class="mrel">${[a!==null?a+" saal":"",!isGone(m)&&m.city?esc(m.city):""].filter(Boolean).join(" · ")}</div>
       ${m.id===uid?'<span class="pill me">Aap</span>':""}
     </div></button>`;
   }).join("");
@@ -449,7 +448,7 @@ function renderTree(){
     const sp=spouseOf(m); seen.add(m.id); if(sp) seen.add(sp.id);
     const ids=[m.id, sp&&sp.id].filter(Boolean);
     const kids=members.filter(k=>!seen.has(k.id)&&(ids.includes(k.father_id)||ids.includes(k.mother_id))).sort((a,b)=>birthKey(a).localeCompare(birthKey(b)));
-    const person=p=>`<button class="tp${isGone(p)?" gone":""}" data-id="${esc(p.id)}">${avatar(p,"sm")}<span>${isGone(p)?"🙏 ":""}${esc((p.name||"").split(" ")[0]||"?")}</span><small>${esc(p.relation||"")}</small></button>`;
+    const person=p=>`<button class="tp${isGone(p)?" gone":""}" data-id="${esc(p.id)}">${avatar(p,"sm")}<span>${isGone(p)?"🙏 ":""}${esc((p.name||"").split(" ")[0]||"?")}</span></button>`;
     const inner=kids.map(k=>node(k)).filter(Boolean);
     return `<li><div class="couple">${person(m)}${sp?`<span class="amp">❤</span>${person(sp)}`:""}</div>${inner.length?`<ul>${inner.map(x=>x).join("")}</ul>`:""}</li>`;
   };
@@ -479,7 +478,7 @@ function renderParivar(){
     <div class="sec"><h4>🙏 Hamare Purvaj</h4>${gone.length?gone.map(m=>{
       const r=deathTithi(m), st=shraddhTarget(r);
       return `<button class="mcard gone" data-id="${esc(m.id)}" style="margin-top:8px">${avatar(m)}<div><div class="mname">Swa. ${esc(m.name)}</div>
-        <div class="mrel">${esc(m.relation||"")}${m.dod?` · Dehant: ${esc(fmtDate(m.dod))}`:""}</div>
+        <div class="mrel">${m.dod?`Dehant: ${esc(fmtDate(m.dod))}`:""}</div>
         ${r?`<div class="mrel">🪔 Punyatithi: ${esc(r.month+" "+r.paksha+" "+r.tithi)}${st?` · Shraddh: ${esc(st.label)}`:""}</div>`:""}</div></button>`}).join("")
       :`<p class="sub" style="margin:0">Kisi member ke biodata mein “Sthiti: Swargiya” chunoge to woh yahan dikhenge.</p>`}</div>`;
   const b=$("#famEdit"); if(b) b.onclick=openFamForm;
@@ -585,11 +584,11 @@ function renderEmergency(){
   const tel=v=>v?`<a href="tel:${esc(v.replace(/[^\d+]/g,""))}">${esc(v)}</a>`:"—";
   $("#emergency").innerHTML=`<div class="footer-actions" style="margin:0 0 10px"><button class="btn plain" id="copyEm">📋 Poori list copy karo</button></div>`+
     list.map(m=>`<div class="emc"><div class="bg ${m.blood?"":"none"}">${esc(m.blood||"?")}</div><div class="who">
-      <b>${esc(m.name)}</b><span>${esc(m.relation||"")}${m.city?` · ${esc(m.city)}`:""}</span>
+      <b>${esc(m.name)}</b><span>${m.city?esc(m.city):""}</span>
       <div class="emrow">📱 ${tel(m.mobile)}</div>
       ${m.emergency?`<div class="emrow">🆘 ${esc(m.emergency)}</div>`:""}
       ${m.medical?`<div class="emrow">🩺 ${esc(m.medical)}</div>`:""}</div></div>`).join("");
-  $("#copyEm").onclick=async()=>{ const t="🆘 PARIVAR EMERGENCY LIST\n\n"+list.map(m=>`${m.name} (${m.relation||""})\nBlood: ${m.blood||"-"} | Mobile: ${m.mobile||"-"}${m.emergency?"\nEmergency: "+m.emergency:""}${m.medical?"\nHealth: "+m.medical:""}`).join("\n\n");
+  $("#copyEm").onclick=async()=>{ const t="🆘 PARIVAR EMERGENCY LIST\n\n"+list.map(m=>`${m.name}\nBlood: ${m.blood||"-"} | Mobile: ${m.mobile||"-"}${m.emergency?"\nEmergency: "+m.emergency:""}${m.medical?"\nHealth: "+m.medical:""}`).join("\n\n");
     try{await navigator.clipboard.writeText(t);toast("Copy ho gaya ✓")}catch(e){toast("Copy nahi hua")} };
 }
 
@@ -624,7 +623,7 @@ function sectionRows(m,s,skip){
   return rows;
 }
 function biodataText(m){
-  let out=`*${isGone(m)?"Swa. ":""}${m.name||""}*${m.relation?` (${m.relation})`:""}\n`;
+  let out=`*${isGone(m)?"Swa. ":""}${m.name||""}*\n`;
   SECTIONS.forEach(s=>{ if(s.t.startsWith("Documents")) return; const rows=sectionRows(m,s); if(rows.length) out+=`\n— ${s.t} —\n`+rows.map(([l,v])=>`${l}: ${v}`).join("\n")+"\n"; });
   return out.trim();
 }
@@ -654,7 +653,7 @@ function openView(id){
     <div class="sheet-head"><h2>Biodata</h2><button class="x" aria-label="Band karo" id="cls">×</button></div>
     <div class="profile-top">${avatar(m,"big")}<div>
       <h3>${isGone(m)?"🙏 Swa. ":""}${esc(m.name||"Bina naam")}</h3>
-      <div class="mrel">${esc(m.relation||"")}${m.nickname?` · “${esc(m.nickname)}”`:""}</div>
+      <div class="mrel">${m.nickname?`“${esc(m.nickname)}”`:""}</div>
       ${m.id===uid?'<span class="pill me">Aapka biodata</span>':""}
     </div></div>
     ${(()=>{ const bad=wrongParents(m); if(!bad.length) return "";

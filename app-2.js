@@ -6,7 +6,7 @@ function fieldHTML([k,l,o={}],v,selfId){
   if(o.checks){ const on=String(v).split(","); return `<div class="${cls}"><div class="flabel">${lab}</div><div class="checks">${o.checks.map(x=>`<label class="chk"><input type="checkbox" name="${k}" value="${esc(x)}" ${on.includes(x)?"checked":""}> ${esc(x)}</label>`).join("")}</div></div>`; }
   if(o.member){
     const opts=members.filter(x=>x.id!==selfId).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-    return `<label class="${cls}">${lab}<select name="${k}"><option value="">— koi nahi —</option>${opts.map(x=>`<option value="${esc(x.id)}" ${x.id===v?"selected":""}>${esc(x.name)}${x.relation?` (${esc(x.relation)})`:""}</option>`).join("")}</select></label>`;
+    return `<label class="${cls}">${lab}<select name="${k}"><option value="">— koi nahi —</option>${opts.map(x=>`<option value="${esc(x.id)}" ${x.id===v?"selected":""}>${esc(x.name)}</option>`).join("")}</select></label>`;
   }
   if(o.sel){ const list=o.sel.includes(v)||!v?o.sel:[...o.sel,v];
     return `<label class="${cls}">${lab}<select name="${k}">${list.map(x=>`<option ${x===v?"selected":""} value="${esc(x)}">${x?esc(x):"— chuniye —"}</option>`).join("")}</select></label>`; }
@@ -133,7 +133,7 @@ async function save(id,old,isNew){
     if(qT==="Pita / Mata"){ const fem=data.gender==="Female"; later.push([qX.id,fem?{mother_id:"__SELF__"}:{father_id:"__SELF__"}]);
       if(data.spouse_id) later.push([qX.id,fem?{father_id:data.spouse_id}:{mother_id:data.spouse_id}]); }
   }
-  if(!data.relation){toast("Rishta bharo (jaise Papa, Bua)");return}
+  delete data.relation; if(old.relation) data.relation=old.relation;
   data.photo = pendingPhoto!==undefined ? pendingPhoto : (old.photo||"");
   if(old.ownerKey) data.ownerKey=old.ownerKey;
   if(old.ownerEmail) data.ownerEmail=old.ownerEmail;
