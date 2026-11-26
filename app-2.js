@@ -81,7 +81,7 @@ async function shrinkPhoto(file,max,limit){
   return out;
 }
 let saving=false;
-const VIA_NAME={cousinsM:"chachere/mamere bhai",cousinsF:"chacheri/mameri behen",spouseFather:"sasur",spouseMother:"saas",spouseFatherBro:"chacha sasur / bade sasur",spouseFatherSis:"bua saas",spouseMotherBro:"mama sasur",spouseMotherSis:"mausi saas",spouseBrothers:"pati/patni ke bhai",spouseSisters:"pati/patni ki behen",father:"pita",mother:"mata",spouse:"pati/patni",husband:"pati",wife:"patni",sons:"beta",daughters:"beti",brothers:"bhai",sisters:"behen",fatherBro:"chacha/taau",fatherSis:"bua",motherBro:"mama",motherSis:"mausi","fatherSibs+motherSibs":"chacha/bua/mama/mausi"};
+const VIA_NAME={dada:"dada ji",dadi:"dadi ji",nana:"nana ji",nani:"nani ji",dadaBro:"bade/chhote dada",dadaSis:"bua dadi",nanaBro:"bade/chhote nana",nanaSis:"nana ji ki behen",cousinsM:"chachere/mamere bhai",cousinsF:"chacheri/mameri behen",spouseFather:"sasur",spouseMother:"saas",spouseFatherBro:"chacha sasur / bade sasur",spouseFatherSis:"bua saas",spouseMotherBro:"mama sasur",spouseMotherSis:"mausi saas",spouseBrothers:"pati/patni ke bhai",spouseSisters:"pati/patni ki behen",father:"pita",mother:"mata",spouse:"pati/patni",husband:"pati",wife:"patni",sons:"beta",daughters:"beti",brothers:"bhai",sisters:"behen",fatherBro:"chacha/taau",fatherSis:"bua",motherBro:"mama",motherSis:"mausi","fatherSibs+motherSibs":"chacha/bua/mama/mausi"};
 function siblingsOf(m){ if(!m) return []; return members.filter(k=>k.id!==m.id&&((k.father_id&&k.father_id===m.father_id)||(k.mother_id&&k.mother_id===m.mother_id)||k.sib_of===m.id||m.sib_of===k.id||(k.sib_of&&k.sib_of===m.sib_of))); }
 function childrenOf(m){ return m?members.filter(k=>k.father_id===m.id||k.mother_id===m.id):[]; }
 function relVia(X,via){
@@ -95,6 +95,10 @@ function relVia(X,via){
     case "fatherBro": return G2(siblingsOf(fa),"Male"); case "fatherSis": return G2(siblingsOf(fa),"Female");
     case "motherBro": return G2(siblingsOf(mo),"Male"); case "motherSis": return G2(siblingsOf(mo),"Female");
     case "fatherSibs+motherSibs": return [...siblingsOf(fa),...siblingsOf(mo)];
+    case "dada": { const x=fa&&byId(fa.father_id); return x?[x]:[]; } case "dadi": { const x=fa&&byId(fa.mother_id); return x?[x]:[]; }
+    case "nana": { const x=mo&&byId(mo.father_id); return x?[x]:[]; } case "nani": { const x=mo&&byId(mo.mother_id); return x?[x]:[]; }
+    case "dadaBro": return G2(siblingsOf(fa&&byId(fa.father_id)),"Male"); case "dadaSis": return G2(siblingsOf(fa&&byId(fa.father_id)),"Female");
+    case "nanaBro": return G2(siblingsOf(mo&&byId(mo.father_id)),"Male"); case "nanaSis": return G2(siblingsOf(mo&&byId(mo.father_id)),"Female");
     case "cousinsM": case "cousinsF": { const cs=[...siblingsOf(fa),...siblingsOf(mo)].flatMap(childrenOf).filter(c=>c.id!==X.id&&!siblingsOf(X).some(s=>s.id===c.id)); return G2(cs,via==="cousinsM"?"Male":"Female"); }
   }
   const sfa=sp&&byId(sp.father_id), smo=sp&&byId(sp.mother_id);
@@ -368,23 +372,30 @@ function kinTerm(path,A,B){
     case "CSPC": return G(A,"Samdhi ke bhai","Samdhi ki behen");
     case "SPS": return G(A,"Sasur","Saas");
     case "SPCC": return isF(B)?(isM(s2)?G(A,"Bhatija","Bhatiji"):G(A,"Bhanja","Bhanji")):(isM(s2)?G(A,"Bhatija (saale ka)","Bhatiji (saale ki)"):G(A,"Bhanja (saali ka)","Bhanji (saali ki)"));
-    case "PPPC": return side==="f"?G(A,"Dada ji ke bhai (Bade/Chhote Dada)","Bua Dadi"):G(A,"Nana ji ke bhai","Nani ji ki behen");
+    case "PPPC": { const o=older(A,s2), bc=(b,c)=>o===null?`${b} / ${c}`:o?b:c;
+      if(side!=="m"){ if(isF(s2)) return G(A,"Dadi ji ke bhai","Dadi ji ki behen"); return isF(A)?"Bua Dadi (Dada ji ki behen)":bc("Bade Dada","Chhote Dada")+" (Dada ji ke bhai)"; }
+      if(isF(s2)) return G(A,"Nani ji ke bhai","Nani ji ki behen"); return isF(A)?"Nana ji ki behen":bc("Bade Nana","Chhote Nana")+" (Nana ji ke bhai)"; }
+    case "PPPCS": { const s4=path[3]&&path[3].to, o=older(s4,s2), bc=(b,c)=>o===null?`${b} / ${c}`:o?b:c;
+      if(side!=="m"){ if(isF(s2)) return G(A,"Dadi ji ki behen ke pati","Dadi ji ke bhai ki patni"); return isM(s4)?bc("Badi Dadi","Chhoti Dadi")+" (Dada ji ke bhai ki patni)":"Fufa Dada (Bua Dadi ke pati)"; }
+      if(isF(s2)) return G(A,"Nani ji ki behen ke pati","Nani ji ke bhai ki patni"); return isM(s4)?bc("Badi Nani","Chhoti Nani")+" (Nana ji ke bhai ki patni)":"Nana ji ki behen ke pati"; }
+    case "SPCCC": case "PCCC": { if(code==="SPCCC") return G(A,"Pota/Naati","Poti/Naatin"); const t=isM(s3)?G(A,"Pota","Poti"):isF(s3)?G(A,"Naati","Naatin"):G(A,"Pota/Naati","Poti/Naatin");
+      return `${t} (${isM(s2)?"bhai":isF(s2)?"behen":"bhai/behen"} ${isM(s3)?"ke bete":isF(s3)?"ki beti":"ke bachche"} ${G(A,"ka beta","ki beti")})`; }
     case "PPCSP": return "Rishtedaar";
-    case "PCCC": return G(A,"Bhatije/Bhanje ka beta","Bhatije/Bhanje ki beti");
     case "CSC": return G(A,"Pota/Naati","Poti/Naatin");
     case "SCC": return G(A,"Pota/Naati","Poti/Naatin");
   }
   return null;
 }
-const PRETTY={"Pita":"Papa (Pita ji)","Mata":"Mummy (Mata ji)","Taau":"Bade Papa (Taau ji)","Taai":"Badi Mummy (Taai ji)","Chacha":"Chacha (Chhote Papa)","Chachi":"Chachi (Chhoti Mummy)","Bua":"Bua (Bhua ji)","Phupha (Fufa)":"Phupha (Fufa ji)","Chacha/Taau":"Chacha / Bade Papa","Dada":"Dada ji","Dadi":"Dadi ji","Nana":"Nana ji","Nani":"Nani ji","Mama":"Mama ji","Mami":"Mami ji","Mausi":"Mausi ji","Mausa":"Mausa ji"};
+const PRETTY={"Pita":"Papa (Pita ji)","Mata":"Mummy (Mata ji)","Taau":"Bade Papa (Taau ji)","Taai":"Badi Mummy (Taai ji)","Chacha":"Chacha","Chachi":"Chachi","Bua":"Bua (Bhua ji)","Phupha (Fufa)":"Phupha (Fufa ji)","Chacha/Taau":"Chacha / Bade Papa","Dada":"Dada ji","Dadi":"Dadi ji","Nana":"Nana ji","Nani":"Nani ji","Mama":"Mama ji","Mami":"Mami ji","Mausi":"Mausi ji","Mausa":"Mausa ji"};
 const pretty=t=>PRETTY[t]||t;
 function relTo(other,me){ // what `other` is to `me`
   const p=findPath(me.id,other.id); if(!p) return null;
-  const t=kinTerm(p,other,me); return {term:t?pretty(t):("Rishtedaar: "+me.name.split(" ")[0]+" ke "+chainText(p)), len:p.length, exact:!!t};
+  const t=kinTerm(p,other,me); return {term:t?pretty(t):("Rishtedaar: "+me.name.split(" ")[0]+(isF(p[0]&&p[0].to)?" ki ":" ke ")+chainText(p)), len:p.length, exact:!!t};
 }
 function chainText(path){
   const w={P:p=>G(p,"pita","mata"),C:p=>G(p,"bete","beti"),S:p=>G(p,"pati","patni")};
-  return path.map(s=>w[s.t](s.to)).join(" ke ");
+  const n=path.length; return path.map((s,i)=>{ const last=i===n-1; let wd=w[s.t](s.to); if(last&&wd==="bete") wd="beta";
+    return (i?(isF(s.to)?" ki ":last?" ka ":" ke "):"")+wd; }).join("");
 }
 function renderKinship(){
   const opts=members.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("");
@@ -398,8 +409,8 @@ function renderKinship(){
     const p=findPath(B.id,A.id);
     if(!p){r.innerHTML=`${esc(A.name)} aur ${esc(B.name)} ka rishta app mein juda nahi hai. Family Tree ke rishte bharo.`;return}
     const t=kinTerm(p,A,B);
-    r.innerHTML=t?`<b>${esc(A.name)}</b>, <b>${esc(B.name)}</b> ${A.gender==="Female"?"ki":"ke"} <span class="kterm">${esc(t)}</span> ${A.gender==="Female"?"lagti hain":"lagte hain"}.<div class="sub" style="font-size:13px;margin-top:4px">(${esc(B.name)} ke ${esc(chainText(p))})</div>`
-      :`<b>${esc(A.name)}</b>, <b>${esc(B.name)}</b> ke <span class="kterm">${esc(chainText(p))}</span> hain.`;
+    r.innerHTML=t?`<b>${esc(A.name)}</b>, <b>${esc(B.name)}</b> ${A.gender==="Female"?"ki":"ke"} <span class="kterm">${esc(t)}</span> ${A.gender==="Female"?"lagti hain":"lagte hain"}.<div class="sub" style="font-size:13px;margin-top:4px">(${esc(B.name)} ${isF(p[0]&&p[0].to)?"ki":"ke"} ${esc(chainText(p))})</div>`
+      :`<b>${esc(A.name)}</b>, <b>${esc(B.name)}</b> ${isF(p[0]&&p[0].to)?"ki":"ke"} <span class="kterm">${esc(chainText(p))}</span> hain.`;
   };
   $("#kA").onchange=go; $("#kB").onchange=go;
 }
