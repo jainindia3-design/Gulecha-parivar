@@ -81,7 +81,7 @@ async function shrinkPhoto(file,max,limit){
   return out;
 }
 let saving=false;
-const VIA_NAME={spouseFather:"sasur",spouseMother:"saas",spouseFatherBro:"chacha sasur / bade sasur",spouseFatherSis:"bua saas",spouseMotherBro:"mama sasur",spouseMotherSis:"mausi saas",spouseBrothers:"pati/patni ke bhai",spouseSisters:"pati/patni ki behen",father:"pita",mother:"mata",spouse:"pati/patni",husband:"pati",wife:"patni",sons:"beta",daughters:"beti",brothers:"bhai",sisters:"behen",fatherBro:"chacha/taau",fatherSis:"bua",motherBro:"mama",motherSis:"mausi","fatherSibs+motherSibs":"chacha/bua/mama/mausi"};
+const VIA_NAME={cousinsM:"chachere/mamere bhai",cousinsF:"chacheri/mameri behen",spouseFather:"sasur",spouseMother:"saas",spouseFatherBro:"chacha sasur / bade sasur",spouseFatherSis:"bua saas",spouseMotherBro:"mama sasur",spouseMotherSis:"mausi saas",spouseBrothers:"pati/patni ke bhai",spouseSisters:"pati/patni ki behen",father:"pita",mother:"mata",spouse:"pati/patni",husband:"pati",wife:"patni",sons:"beta",daughters:"beti",brothers:"bhai",sisters:"behen",fatherBro:"chacha/taau",fatherSis:"bua",motherBro:"mama",motherSis:"mausi","fatherSibs+motherSibs":"chacha/bua/mama/mausi"};
 function siblingsOf(m){ if(!m) return []; return members.filter(k=>k.id!==m.id&&((k.father_id&&k.father_id===m.father_id)||(k.mother_id&&k.mother_id===m.mother_id)||k.sib_of===m.id||m.sib_of===k.id||(k.sib_of&&k.sib_of===m.sib_of))); }
 function childrenOf(m){ return m?members.filter(k=>k.father_id===m.id||k.mother_id===m.id):[]; }
 function relVia(X,via){
@@ -95,6 +95,7 @@ function relVia(X,via){
     case "fatherBro": return G2(siblingsOf(fa),"Male"); case "fatherSis": return G2(siblingsOf(fa),"Female");
     case "motherBro": return G2(siblingsOf(mo),"Male"); case "motherSis": return G2(siblingsOf(mo),"Female");
     case "fatherSibs+motherSibs": return [...siblingsOf(fa),...siblingsOf(mo)];
+    case "cousinsM": case "cousinsF": { const cs=[...siblingsOf(fa),...siblingsOf(mo)].flatMap(childrenOf).filter(c=>c.id!==X.id&&!siblingsOf(X).some(s=>s.id===c.id)); return G2(cs,via==="cousinsM"?"Male":"Female"); }
   }
   const sfa=sp&&byId(sp.father_id), smo=sp&&byId(sp.mother_id);
   switch(via){
@@ -337,6 +338,14 @@ function kinTerm(path,A,B){
     case "PPC": if(side==="f"){ if(isF(A)) return "Bua"; const o=older(A,s1); return o===null?"Chacha/Taau":o?"Taau":"Chacha"; }
       if(side==="m") return G(A,"Mama","Mausi"); return G(A,"Chacha/Mama","Bua/Mausi");
     case "PPCS": if(side==="f") return isM(s3)?(older(s3,s1)?"Taai":"Chachi"):"Phupha (Fufa)"; if(side==="m") return isM(s3)?"Mami":"Mausa"; return "Rishtedaar";
+    case "PPCCC": { const s4=path[3]&&path[3].to; const kind=side==="f"?(isM(s3)?"chachere":"phuphere"):side==="m"?(isM(s3)?"mamere":"mausere"):"cousin";
+      const kindF=kind.replace(/e$/,"i"); const via=isM(s4)?`${kind} bhai`:isF(s4)?`${kindF} behen`:`${kind} bhai/behen`;
+      const t=isM(s4)?G(A,"Bhatija","Bhatiji"):isF(s4)?G(A,"Bhanja","Bhanji"):G(A,"Bhatija/Bhanja","Bhatiji/Bhanji");
+      return `${t} (${via} ${G(A,"ka beta","ki beti")})`; }
+    case "PPPCC": { const s4=path[3]&&path[3].to; const fs=isM(s1)?"pitaji":isF(s1)?"mummy":"mata-pita";
+      const t=isM(s1)?(isF(A)?"Bua":"Chacha / Taau"):isF(s1)?G(A,"Mama","Mausi"):G(A,"Chacha/Mama","Bua/Mausi");
+      return `${t} (${fs} ${isF(A)?"ki cousin behen":"ke cousin bhai"})`; }
+    case "PPCCS": return G(A,"Cousin ke pati (Jija)","Cousin ki patni (Bhabhi)");
     case "PPCC": { const kind=side==="f"?(isM(s3)?"Chachera":"Phuphera"):side==="m"?(isM(s3)?"Mamera":"Mausera"):"Cousin"; return `${kind} ${G(A,"Bhai","Behen")}`; }
     case "PCC": return isM(s2)?G(A,"Bhatija","Bhatiji"):isF(s2)?G(A,"Bhanja","Bhanji"):G(A,"Bhatija/Bhanja","Bhatiji/Bhanji");
     case "PCS": return isM(s2)?"Bhabhi":isF(s2)?"Jija":"Bhabhi/Jija";
@@ -357,7 +366,6 @@ function kinTerm(path,A,B){
     case "PCCS": return isM(s2)?G(A,"Bhatiji-jamai","Bhatij-bahu"):isF(s2)?G(A,"Bhanji-jamai","Bhanj-bahu"):G(A,"Jamai","Bahu");
     case "PCCSP": return G(A,"Samdhi","Samdhan");
     case "CSPC": return G(A,"Samdhi ke bhai","Samdhi ki behen");
-    case "PPCCS": return G(A,"Cousin ke pati","Cousin ki patni (Bhabhi)");
     case "SPS": return G(A,"Sasur","Saas");
     case "SPCC": return isF(B)?(isM(s2)?G(A,"Bhatija","Bhatiji"):G(A,"Bhanja","Bhanji")):(isM(s2)?G(A,"Bhatija (saale ka)","Bhatiji (saale ki)"):G(A,"Bhanja (saali ka)","Bhanji (saali ki)"));
     case "PPPC": return side==="f"?G(A,"Dada ji ke bhai (Bade/Chhote Dada)","Bua Dadi"):G(A,"Nana ji ke bhai","Nani ji ki behen");

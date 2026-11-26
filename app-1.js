@@ -111,6 +111,8 @@ const REL_DEFS={
  "Badi saas (Taai saas)":["spouseFatherBro","spouse","Female"],"Chachi saas":["spouseFatherBro","spouse","Female"],"Fufa sasur":["spouseFatherSis","spouse","Male"],
  "Mama sasur":["spouseMother","sibling","Male"],"Mausi saas":["spouseMother","sibling","Female"],"Mami saas":["spouseMotherBro","spouse","Female"],"Mausa sasur":["spouseMotherSis","spouse","Male"],
  "Devrani / Jethani / Salhaj":["spouseBrothers","spouse","Female"],"Nandoi / Saadhu":["spouseSisters","spouse","Male"],
+ "Chachere/Mamere bhai ka beta":["cousinsM","child","Male"],"Chachere/Mamere bhai ki beti":["cousinsM","child","Female"],
+ "Chacheri/Mameri behen ka beta":["cousinsF","child","Male"],"Chacheri/Mameri behen ki beti":["cousinsF","child","Female"],
  "Chachera / Mamera bhai":["fatherSibs+motherSibs","child","Male"],"Chacheri / Mameri behen":["fatherSibs+motherSibs","child","Female"],
 };
 const REL_LIST=["",...Object.keys(REL_DEFS)];
