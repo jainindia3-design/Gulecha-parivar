@@ -372,12 +372,16 @@ function kinTerm(path,A,B){
     case "CSPC": return G(A,"Samdhi ke bhai","Samdhi ki behen");
     case "SPS": return G(A,"Sasur","Saas");
     case "SPCC": return isF(B)?(isM(s2)?G(A,"Bhatija","Bhatiji"):G(A,"Bhanja","Bhanji")):(isM(s2)?G(A,"Bhatija (saale ka)","Bhatiji (saale ki)"):G(A,"Bhanja (saali ka)","Bhanji (saali ki)"));
-    case "PPPC": { const o=older(A,s2), bc=(b,c)=>o===null?`${b} / ${c}`:o?b:c;
-      if(side!=="m"){ if(isF(s2)) return G(A,"Dadi ji ke bhai","Dadi ji ki behen"); return isF(A)?"Bua Dadi (Dada ji ki behen)":bc("Bade Dada","Chhote Dada")+" (Dada ji ke bhai)"; }
-      if(isF(s2)) return G(A,"Nani ji ke bhai","Nani ji ki behen"); return isF(A)?"Nana ji ki behen":bc("Bade Nana","Chhote Nana")+" (Nana ji ke bhai)"; }
-    case "PPPCS": { const s4=path[3]&&path[3].to, o=older(s4,s2), bc=(b,c)=>o===null?`${b} / ${c}`:o?b:c;
-      if(side!=="m"){ if(isF(s2)) return G(A,"Dadi ji ki behen ke pati","Dadi ji ke bhai ki patni"); return isM(s4)?bc("Badi Dadi","Chhoti Dadi")+" (Dada ji ke bhai ki patni)":"Fufa Dada (Bua Dadi ke pati)"; }
-      if(isF(s2)) return G(A,"Nani ji ki behen ke pati","Nani ji ke bhai ki patni"); return isM(s4)?bc("Badi Nani","Chhoti Nani")+" (Nana ji ke bhai ki patni)":"Nana ji ki behen ke pati"; }
+    case "PPPC": { const o=older(A,s2), bc=(x,y)=>o===null?`${x} / ${y}`:o?x:y;
+      if(side!=="m"){ if(isF(s2)) return G(A,"Dadiji ke bhai","Dadiji ki behen"); return isF(A)?"Bua Dadiji":bc("Bade Dadaji","Chhote Dadaji"); }
+      if(isF(s2)) return G(A,"Naniji ke bhai","Naniji ki behen"); return isF(A)?"Naniji (Nanaji ki behen)":bc("Bade Nanaji","Chhote Nanaji"); }
+    case "PPPCS": { const s4=path[3]&&path[3].to, o=older(s4,s2), bc=(x,y)=>o===null?`${x} / ${y}`:o?x:y;
+      if(side!=="m"){ if(isF(s2)) return G(A,"Dadiji ki behen ke pati","Dadiji ke bhai ki patni"); return isM(s4)?bc("Badi Dadiji","Chhoti Dadiji"):"Fufa Dadaji"; }
+      if(isF(s2)) return G(A,"Naniji ki behen ke pati","Naniji ke bhai ki patni"); return isM(s4)?bc("Badi Naniji","Chhoti Naniji"):"Nanaji ki behen ke pati"; }
+    case "PPPPCC": { const gp=side==="m"?"Nanaji":"Dadaji", gm=side==="m"?"Naniji":"Dadiji";
+      return isM(A)?`${gp} (${isF(s2)?gm:gp} ke cousin bhai)`:`${side==="m"?"Naniji":"Bua Dadiji"} (${isF(s2)?gm:gp} ki cousin behen)`; }
+    case "PPPPCCS": { const s5=path[4]&&path[4].to, gp=side==="m"?"Nanaji":"Dadaji", gm=side==="m"?"Naniji":"Dadiji";
+      return isF(A)?`${gm} (${isF(s2)?gm:gp} ke cousin bhai ki patni)`:`${gp} (${isF(s2)?gm:gp} ki cousin behen ke pati)`; }
     case "SPCCC": case "PCCC": { if(code==="SPCCC") return G(A,"Pota/Naati","Poti/Naatin"); const t=isM(s3)?G(A,"Pota","Poti"):isF(s3)?G(A,"Naati","Naatin"):G(A,"Pota/Naati","Poti/Naatin");
       return `${t} (${isM(s2)?"bhai":isF(s2)?"behen":"bhai/behen"} ${isM(s3)?"ke bete":isF(s3)?"ki beti":"ke bachche"} ${G(A,"ka beta","ki beti")})`; }
     case "PPCSP": return "Rishtedaar";
