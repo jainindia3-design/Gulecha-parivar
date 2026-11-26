@@ -128,7 +128,10 @@ const SECTIONS = [
     ["hs_month","Hindu mahina",{sel:MONTH_OPTS}],
     ["hs_paksha","Paksha",{sel:["","Shukla Paksha","Krishna Paksha"]}],
     ["hs_tithi","Tithi",{sel:TITHI_OPTS}],
-    ["pob","Janam sthan"],
+    ["pob","Janam sthan (likhte hi list aayegi)",{full:1}],
+    ["pob_lat","Latitude (apne aap)",{type:"number"}],
+    ["pob_lon","Longitude (apne aap)",{type:"number"}],
+    ["pob_tz","",{type:"hidden"}],
     ["blood","Blood group",{sel:["","A+","A-","B+","B-","AB+","AB-","O+","O-"]}],
     ["height","Height (jaise 5'8\")"],
     ["gotra","Gotra"],
@@ -210,8 +213,8 @@ const SECTIONS = [
 const ALL_FIELDS = SECTIONS.flatMap(s=>s.f);
 const HS=["hs_year","hs_month","hs_paksha","hs_tithi"];
 const DOCS=[["exp_passport","Passport"],["exp_license","Driving licence"],["exp_health","Health insurance"],["exp_life","Life insurance premium"],["exp_vehicle","Gaadi insurance"],["exp_puc","PUC"]];
-const HIDE_IN_VIEW=new Set(["hide","relation","q_member","q_type","name","father_id","mother_id","spouse_id","alive","exp_other_name"]);
-const PDF_SKIP=new Set(["q_member","q_type","vrat","school","standard","activity","vac_name","vac_date","medical","emergency","income","father_id","mother_id","spouse_id","alive","dod","memories","email","address","whatsapp",...DOCS.map(d=>d[0]),"exp_other","exp_other_name"]);
+const HIDE_IN_VIEW=new Set(["pob_lat","pob_lon","pob_tz","hide","relation","q_member","q_type","name","father_id","mother_id","spouse_id","alive","exp_other_name"]);
+const PDF_SKIP=new Set(["pob_lat","pob_lon","pob_tz","q_member","q_type","vrat","school","standard","activity","vac_name","vac_date","medical","emergency","income","father_id","mother_id","spouse_id","alive","dod","memories","email","address","whatsapp",...DOCS.map(d=>d[0]),"exp_other","exp_other_name"]);
 
 /* ======================= State ======================= */
 let db=null, user=null, uid=null, isAdmin=false, canWrite=null, downloads=null;
@@ -604,6 +607,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"){ if($("#lightbox").
 function viewValue(m,k){
   let v=m[k];
   if(k==="dob"||k==="anniversary"||k==="dod"||k.startsWith("exp_")&&k!=="exp_other_name") v=fmtDate(v)+(k==="dob"&&!isGone(m)&&age(m.dob)!==null?` (${age(m.dob)} saal)`:"")+(k==="dod"&&m.dob?` (${age(m.dob,m.dod)} varsh ki aayu)`:"");
+  if(k==="pob"&&m.pob_lat&&m.pob_lon) v=`${m.pob} (${(+m.pob_lat).toFixed(2)}°N, ${(+m.pob_lon).toFixed(2)}°E)`;
   if(k==="exp_other") v=`${m.exp_other_name||"Document"}: ${fmtDate(m.exp_other)}`;
   return v;
 }
@@ -705,7 +709,7 @@ function cardHTML(m){
     const rows=sectionRows(m,s,PDF_SKIP); if(!rows.length) return "";
     return `<div class="bc-sec"><div class="bc-h">${esc(s.t==="Family Tree ke liye jodo"?"Parivar":s.t)}</div><table>${rows.map(([l,v])=>`<tr><td class="l">${esc(l)}</td><td>${esc(v)}</td></tr>`).join("")}</table></div>`;
   }).join("");
-  return `<div class="bc"><div class="bc-top"><div class="bc-logo"><img src="${KULDEVI_DATA}" alt=""></div><div class="bc-om">॥ श्री गणेशाय नमः ॥ &nbsp; ॥ श्री महावीराय नमः ॥<br>॥ जय सच्चियाय माता ॥ &nbsp; ॥ श्री काला भैरूजी नमः ॥</div><div class="bc-title">BIODATA</div></div>
+  return `<div class="bc"><div class="bc-top"><div class="bc-logo"><img src="${KULDEVI_DATA}" alt=""><img src="${typeof KULDEVTA_DATA!=="undefined"?KULDEVTA_DATA:KULDEVI_DATA}" alt=""></div><div class="bc-om">॥ श्री गणेशाय नमः ॥ &nbsp; ॥ श्री महावीराय नमः ॥<br>॥ जय सच्चियाय माता ॥ &nbsp; ॥ श्री काला भैरूजी नमः ॥</div><div class="bc-title">BIODATA</div></div>
     <div class="bc-head">${okImg(m.photo)?`<img class="bc-ph" src="${esc(m.photo)}">`:""}<div><div class="bc-name">${esc(m.name||"")}</div>
     ${m.dob?`<div class="bc-sub">Janam: ${esc(fmtDate(m.dob))}${m.tob?", "+esc(m.tob):""}${m.pob?" · "+esc(m.pob):""}</div>`:""}
     ${tithiText(birthTithi(m))?`<div class="bc-sub">${esc(tithiText(birthTithi(m)))}</div>`:""}</div></div>${secs}

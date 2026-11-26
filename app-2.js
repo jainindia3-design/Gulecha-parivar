@@ -1,5 +1,6 @@
 /* ======================= Form ======================= */
 function fieldHTML([k,l,o={}],v,selfId){
+  if(o.type==="hidden") return `<input type="hidden" name="${k}" value="${esc(v??"")}">`;
   const cls="f"+((o.full||o.area)?" full":"");
   const lab=`${esc(fieldLabel(k,l))}${o.req?' <span class="req">*</span>':""}`;
   v=v??"";
