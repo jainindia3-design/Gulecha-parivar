@@ -1,5 +1,5 @@
 /* Gulecha Parivar – offline support */
-const C="gulecha-gh-v24";
+const C="gulecha-gh-v26";
 const SHELL=["./","./index.html","./config.js","./firebase-shim.js","./manifest.webmanifest","./icon-192.png","./icon-512.png","./kuldevi.jpg","./kuldevi-thumb.jpg","./kuldevi-logo.jpg","./app-1.js","./app-2.js","./app-3.js","./app-4.js","./app-5.js","./app-6.js","./app-7.js","./app-8.js","./app-9.js","./join-qr.png","./kuldevta.jpg","./kuldevta-thumb.jpg"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).catch(()=>{}));self.skipWaiting();});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});
