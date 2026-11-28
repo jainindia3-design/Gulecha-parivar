@@ -230,11 +230,17 @@ const JAIN_PARVA=[
  ["Gyan Panchami","ज्ञान पंचमी","Kartik",5,"📚","p"],
  ["Kartik Purnima · Shatrunjay yatra","कार्तिक पूर्णिमा · शत्रुंजय यात्रा","Kartik",15,"⛰️","p"],
  ["Maun Ekadashi","मौन एकादशी","Margashirsha",11,"🤫","p"],
+ ["Jain Bhai Beej (Nandivardhan–Sudarshana)","भाई बीज","Kartik",2,"👫","p"],
+ ["Chaitri Poonam · Pundarik Swami nirvan (Shatrunjay)","चैत्री पूनम · पुंडरीक स्वामी","Chaitra",15,"⛰️","p"],
+ ["Chha Gau ni Yatra (Shatrunjay)","छ गाउ की यात्रा","Phalgun",13,"⛰️","p"],
 ];
 const JAIN_RANGE=[ // [naam, hindi, maas, start raw, end raw, icon]
  ["Chaitri Ayambil (Navpad) Oli","चैत्री आयंबिल ओली","Chaitra",7,15,"🍚"],
  ["Aaso Ayambil (Navpad) Oli","आसो आयंबिल ओली","Ashwin",7,15,"🍚"],
  ["Das Lakshan Parva (Digambar)","दसलक्षण पर्व","Bhadrapad",5,14,"🌸"],
+ ["Kartik Ashtahnika (Atthai)","कार्तिक अष्टाह्निका","Kartik",8,15,"🪔"],
+ ["Phalgun Ashtahnika (Atthai)","फाल्गुन अष्टाह्निका","Phalgun",8,15,"🪔"],
+ ["Ashadh Ashtahnika (Atthai)","आषाढ़ अष्टाह्निका","Ashadh",8,15,"🪔"],
 ];
 function jFind(Y,M,raw){ const pl=getPlace(), sys=getTS().sys, S=yearSeq(Y,pl), MP=Panchang.MAAS.indexOf(M), out=[];
   S.days.forEach(d=>{ if(+d.iso.slice(0,4)!==Y) return; const x=tsDay(d.iso,pl,sys); if(!x||!x.obs.includes(raw)) return;
@@ -277,12 +283,20 @@ function openJainList(){
       <label class="f">Tithi<select id="jxT">${Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}${i===14?" (Poonam/Amas)":""}</option>`).join("")}</select></label>
       <label class="f">Icon<input id="jxI" value="🪷" maxlength="4"></label></div>
       <div class="footer-actions"><button class="btn" id="jxAdd">Jodo</button></div>
+      <details style="margin-top:10px"><summary><b>📋 Ek saath kai jodo (list paste karo)</b></summary>
+        <p class="sub" style="font-size:13px">Har line: <code>Naam | Maas | Sudi/Vadi | Tithi</code><br>jaise: <code>Shantinath Janma Kalyanak | Jyeshtha | Vadi | 13</code></p>
+        <textarea id="jxBulk" rows="6" style="width:100%"></textarea><div class="footer-actions"><button class="btn" id="jxBulkGo">Sab jodo</button></div></details>
       ${ex.length?`<h5 class="pk-h5">Aapke jode hue</h5>`+ex.map((e,i)=>`<div class="pk-hit"><div>${esc(e.icon||"🪷")} ${esc(e.name)}<br><small>${esc(jName(e.m,e.raw))}</small></div><button class="btn sm danger" data-jxd="${i}">✕</button></div>`).join(""):""}</div>`:""}`);
   $("#cls").onclick=closeSheet;
   const save=async arr=>{ const info={...family}; delete info.id; info.jain_extra=arr;
     try{ await db.collection("family").doc("info").set(info); family={...family,jain_extra:arr}; toast("Save ho gaya ✓"); openJainList(); }catch(e){ toast("Save nahi hua"); } };
   const a=$("#jxAdd"); if(a) a.onclick=()=>{ const n=$("#jxN").value.trim(); if(!n){ toast("Naam likho"); return; }
     const t=+$("#jxT").value, k=$("#jxP").value==="k"; save([...ex,{name:n,m:$("#jxM").value,raw:k?15+t:t,icon:$("#jxI").value||"🪷"}]); };
+  const bg=$("#jxBulkGo"); if(bg) bg.onclick=()=>{ const add=[], bad=[];
+    $("#jxBulk").value.split("\n").map(l=>l.trim()).filter(Boolean).forEach(l=>{ const p=l.split(/\s*[|,]\s*/);
+      const M=Panchang.MAAS.find(m=>p[1]&&m.toLowerCase().slice(0,4)===p[1].toLowerCase().slice(0,4)); const k=/vad|krish|वद|कृष्ण/i.test(p[2]||""); const t=parseInt(p[3]);
+      if(!p[0]||!M||!(t>=1&&t<=15)) { bad.push(l); return; } add.push({name:p[0],m:M,raw:k?15+t:t,icon:"🪷"}); });
+    if(bad.length) toast(bad.length+" line samajh nahi aayi: "+bad[0]); if(add.length) save([...ex,...add]); };
   document.querySelectorAll("[data-jxd]").forEach(b=>b.onclick=()=>save(ex.filter((_,i)=>i!==+b.dataset.jxd)));
 }
 if(typeof MORE_TILES!=="undefined"&&!MORE_TILES.some(t=>t[0]==="jain")) MORE_TILES.splice(1,0,["jain","🪷","Jain parva · Kalyanak","जैन पर्व · कल्याणक"]);
