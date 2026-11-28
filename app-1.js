@@ -310,7 +310,6 @@ function yearEvents(year){
   events.forEach(e=>{const p=parseD(e.date); if(p&&p.y===year) push(e.date,{name:e.title||"Event",rel:e.place||"",type:"Family event",icon:"🎉",sub:e.place||"",eid:e.id});});
   const keepers=v=>members.filter(m=>!isGone(m)&&(m.vrat||"").split(",").includes(v));
   festivalDates(year).forEach(f=>{const k=f.vrat?keepers(f.vrat):[]; push(f.iso,{name:L(f.name,f.hi),rel:"",type:"Tyohar",icon:f.icon,sub:(LANG==="hi"?"":f.hi)+(k.length?` · Vrat: ${k.map(m=>(m.name||"").split(" ")[0]).join(", ")}`:""),cat:"tyohar",fest:f});});
-  if(typeof jainDates==="function") try{ jainDates(year).forEach(j=>push(j.iso,{name:L(j.name,j.hi),rel:"",type:"Jain parva",icon:j.icon,sub:j.sub||"",cat:"jain"})); }catch(e){}
   vratDates(year).forEach(v=>{const k=keepers(v.vrat); push(v.iso,{name:L(v.label,VRAT_HI[v.vrat]||v.label),rel:"",type:"Vrat",icon:"🙏",sub:k.length?k.map(m=>(m.name||"").split(" ")[0]).join(", ")+" ka vrat":"",cat:"vrat",kept:k.length>0});});
   ev.sort((a,b)=>a.m-b.m||a.d-b.d||(a.cat==="parivar"?0:1)-(b.cat==="parivar"?0:1)||a.name.localeCompare(b.name));
   return ev;
@@ -372,7 +371,7 @@ function renderTop(){
   $("#addBtn").style.display = (db && isAdmin) ? "" : "none";
   const alive=members.filter(m=>!isGone(m)).length;
   $("#countLine").textContent = members.length ? `${alive} member${alive!==1?"s":""}${members.length>alive?` · ${members.length-alive} purvaj`:""}` : "Family ka poora biodata, ek jagah";
-  const up=loaded?upcoming(30).filter(e=>(!e.private||e.id===uid||isAdmin)&&(e.cat==="tyohar"||e.cat==="jain"?e.in<=10:e.cat==="vrat"?(e.kept&&e.in<=2):true)):[];
+  const up=loaded?upcoming(30).filter(e=>(!e.private||e.id===uid||isAdmin)&&(e.cat==="tyohar"?e.in<=10:e.cat==="vrat"?(e.kept&&e.in<=2):true)):[];
   window._up=up;
   $("#bdays").innerHTML = up.map((e,i)=>{
     const tx=waText(e,e.in);

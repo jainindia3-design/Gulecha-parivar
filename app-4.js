@@ -29,6 +29,7 @@ function loadCache(){ try{ const c=JSON.parse(localStorage.getItem(CK)||"null");
   let timer=setTimeout(()=>{ if(!loaded) setStatus("Data load hone mein der ho rahi hai. Thodi der baad page dobara kholo.",true)},10000);
   try{ [db,user,downloads]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("downloads")]); }catch(e){}
   if(!downloads){ $("#xlsBtn").style.display="none"; }
+  if(user&&user.pending&&typeof startPending==="function"){ clearTimeout(timer); return startPending(); }
   if(!db){ clearTimeout(timer); setStatus("App connect nahi ho paaya. Internet check karke dobara kholo.",true); return; }
   try{ uid = user ? await user.id() : null; }catch(e){}
   try{ isAdmin = user ? !!(await user.canEdit()) : false; }catch(e){}
@@ -42,7 +43,7 @@ function loadCache(){ try{ const c=JSON.parse(localStorage.getItem(CK)||"null");
         if(!m.ownerEmail && m.email && m.email.includes("@")) u.ownerEmail=m.email.trim().toLowerCase();
         if(Object.keys(u).length) db.collection("members").doc(m.id).update(u).catch(()=>{}); }); }
     if(canWrite!==false) setStatus("");
-    renderAll(); refreshOpen(); saveCache();
+    renderAll(); refreshOpen(); saveCache(); try{ if(typeof afterMembers==="function") afterMembers(); }catch(e){ console.error(e); }
   }, err=>{ clearTimeout(timer); console.error(err); setStatus("Data load nahi hua. Page dobara kholo.",true); });
   db.collection("events").onSnapshot(snap=>{ events=docsFrom(snap); if(loaded) renderAll(); saveCache(); }, ()=>{});
   db.collection("notices").onSnapshot(snap=>{ notices=docsFrom(snap); renderHomeExtras(); if(moreView==="notices"&&curTab()==="more") renderNotices(); }, ()=>{});

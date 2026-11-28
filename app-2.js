@@ -288,7 +288,7 @@ function renderMore(){
   const t=MORE_TILES.find(x=>x[0]===moreView);
   $("#more").innerHTML=`<button class="back" id="moreBack">‹ ${L("Wapas","वापस")}</button><h2 class="mh">${t[1]} ${esc(L(t[2],t[3]))}</h2><div id="moreBody"></div>`;
   $("#moreBack").onclick=()=>{moreView=null;renderMore()};
-  ({notices:renderNotices,kinship:renderKinship,recipes:()=>renderCrud("recipes"),stories:()=>renderCrud("stories"),shaadi:renderShaadi,emergency:renderEmergencyInto,settings:renderSettings,access:renderAccess,import:renderImport,dash:renderDash,backup:renderBackup,directory:renderDirectory})[moreView]();
+  ({notices:renderNotices,kinship:renderKinship,recipes:()=>renderCrud("recipes"),stories:()=>renderCrud("stories"),shaadi:renderShaadi,emergency:renderEmergencyInto,settings:renderSettings,access:renderAccess,password:()=>renderPassword(),import:renderImport,dash:renderDash,backup:renderBackup,directory:renderDirectory})[moreView]();
 }
 function openMore(k){moreView=k;renderMore();window.scrollTo(0,0)}
 

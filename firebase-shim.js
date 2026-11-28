@@ -20,7 +20,8 @@
     return new Promise(resolve=>{
       let verifier=null;
       const emailStep=()=>{
-        const el=shell(`<div class="auth-tabs"><button class="on">✉️ Email</button><button id="tOtp">📱 Mobile OTP</button></div>
+        const join=/[?&]join/.test(location.search);
+        const el=shell(`${join?`<p class="auth-msg" style="color:#2b2220;background:#fff4e0;border-radius:10px;padding:10px">🙏 <b>Parivar se judiye!</b><br>Apna email likho, <b>apna khud ka password</b> chuno (6+ akshar) aur <b>“Naya account banao”</b> dabao. Phir apna biodata bharo – admin ki manzoori ke baad poora app khul jayega.</p>`:""}<div class="auth-tabs"><button class="on">✉️ Email</button><button id="tOtp">📱 Mobile OTP</button></div>
           <label class="auth-l">Email</label>
           <input id="eMail" class="auth-in" type="email" autocomplete="email" placeholder="aapka@gmail.com">
           <label class="auth-l">Password <small>(kam se kam 6 akshar)</small></label>
@@ -109,22 +110,35 @@
       const admin=ADMINS.includes(key);
       let allowed=admin;
       if(!admin){ try{ allowed=(await F.getDoc(F.doc(fs,"allowed",key))).exists(); }catch(e){ allowed=false; } }
-      if(!allowed){
-        const el=shell(`<p class="auth-msg" style="color:#2b2220">🙏 Namaste! Aapka <b>${key}</b> abhi family list mein nahi hai.<br><br>Admin (ghar ke bade / app chalane wale) ko ye number bhejiye – woh jodte hi app khul jayega.</p>
-          <button class="auth-btn" id="aRetry">Dobara check karo</button><button class="auth-link" id="aOut">Doosre number se login</button>`);
-        el.querySelector("#aRetry").onclick=()=>location.reload();
-        el.querySelector("#aOut").onclick=()=>A.signOut(auth).then(()=>location.reload());
-        return new Promise(()=>{});
-      }
       hideShell();
-      return {fs,F,A,auth,u,key,admin};
+      return {fs,F,A,auth,u,key,admin,pending:!allowed};
     })();
     return ready;
   }
 
   const clean=v=>JSON.parse(JSON.stringify(v));
   const wrap=s=>({docs:s.docs.map(d=>({id:d.id,data:()=>d.data()}))});
+  function pendingApi(c){
+    const {fs,F,key}=c; const me=F.doc(fs,"pending",key); const no=()=>Promise.reject({code:"permission-denied"});
+    const col=n=>{
+      if(n!=="members") return { doc:()=>({set:no,update:no,delete:no,get:async()=>null}), onSnapshot:(cb,err)=>{ err&&err({code:"permission-denied"}); return ()=>{}; }, where:()=>({get:async()=>({docs:[]})}), get:async()=>({docs:[]}) };
+      return {
+        doc:id=>({
+          set:async v=>{ const nm=v.name||""; await F.setDoc(me,{rec:clean(v),mid:id,key,name:nm,at:Date.now()},{merge:true}); },
+          update:async v=>{ const own=(await F.getDoc(me)); const d=own.exists()?own.data():{}; if(d.mid===id){ await F.setDoc(me,{rec:clean(v)},{merge:true}); return; }
+            await F.setDoc(me,{later:{[id]:clean(v)}},{merge:true}); },
+          delete:no, get:async()=>null }),
+        onSnapshot:(cb,err)=>{ let names=[],own=null; const fire=()=>{ const list=names.filter(x=>!own||x.id!==own.mid).map(x=>({id:x.id,data:()=>x}));
+            if(own&&own.rec) list.push({id:own.mid,data:()=>({...own.rec,_pending:true})}); cb({docs:list}); };
+          const u1=F.onSnapshot(F.doc(fs,"pub","names"),s=>{ names=(s.exists()&&s.data().list)||[]; fire(); },e=>{ fire(); });
+          const u2=F.onSnapshot(me,s=>{ own=s.exists()?s.data():null; window._pendingDoc=own; fire(); },e=>err&&err(e));
+          return ()=>{u1();u2();}; },
+        where:()=>({get:async()=>({docs:[]})}), get:async()=>({docs:[]}) };
+    };
+    return {collection:col};
+  }
   function dbApi(c){
+    if(c.pending) return pendingApi(c);
     const {fs,F}=c;
     const col=n=>({
       doc:id=>({ set:v=>F.setDoc(F.doc(fs,n,id),clean(v)), update:v=>F.updateDoc(F.doc(fs,n,id),clean(v)), delete:()=>F.deleteDoc(F.doc(fs,n,id)), get:async()=>{const s=await F.getDoc(F.doc(fs,n,id));return s.exists()?{id:s.id,...s.data()}:null;} }),
@@ -149,7 +163,15 @@
   window.claude={ use: async name=>{
     const c=await init();
     if(name==="db") return dbApi(c);
-    if(name==="user") return { id:async()=>c.u.uid, canEdit:async()=>c.admin, can:async()=>true, key:c.key, isAdmin:c.admin,
+    if(name==="user") return { id:async()=>c.u.uid, canEdit:async()=>c.admin, can:async()=>true, key:c.key, isAdmin:c.admin, pending:!!c.pending,
+      email:c.u.email||"", hasPassword:()=>!!(c.auth.currentUser&&c.auth.currentUser.providerData.some(p=>p.providerId==="password")),
+      setPassword:async(pw,email)=>{ const cu=c.auth.currentUser; const A=c.A;
+        const hasPw=cu.providerData.some(p=>p.providerId==="password");
+        if(hasPw) return A.updatePassword(cu,pw);
+        const em=(cu.email||email||"").trim().toLowerCase(); if(!em) throw {code:"need-email"};
+        await A.linkWithCredential(cu,A.EmailAuthProvider.credential(em,pw));
+        if(!cu.emailVerified){ try{ await A.sendEmailVerification(cu); }catch(e){} } },
+      resetMail:async()=>{ const cu=c.auth.currentUser; if(cu&&cu.email) return c.A.sendPasswordResetEmail(c.auth,cu.email); throw {code:"need-email"}; },
       signOut:()=>c.A.signOut(c.auth).then(()=>location.reload()) };
     if(name==="downloads") return downloadsApi;
     return null;
